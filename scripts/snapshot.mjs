@@ -113,28 +113,26 @@ async function fetchSpaceStats() {
     });
     const page = await context.newPage();
 
-    // 优先: 拦截主页请求中的统计接口;同时记录出现的空间类接口,便于诊断
-    let resp = null;
+    // 拦截所有空间类接口,广度解析总播放/获赞/稿件/粉丝,并记录各接口字段供诊断
+    let resp = { followers: null, views: null, likes: null, videos: null };
     const apiUrls = new Set();
+    const apiKeys = new Map();
     page.on('response', async (res) => {
       const url = res.url();
-      if (/\/x\/(space|relation|web-interface|wbi)/.test(url)) apiUrls.add(url.split('?')[0]);
-      if (!/\/x\/space\/(acc\/info|wbi\/acc\/info|upstat)/.test(url)) return;
+      if (!/\/x\/(space|relation|wbi|web-interface)/.test(url)) return;
+      const base = url.split('?')[0];
+      apiUrls.add(base);
       try {
         const j = await res.json();
         const d = j?.data;
         if (!d) return;
-        resp = {
-          followers: typeof d.fans === 'number' ? d.fans : null,
-          views:
-            typeof d.view === 'number'
-              ? d.view
-              : d.archive && typeof d.archive.view === 'number'
-                ? d.archive.view
-                : null,
-          likes: typeof d.like === 'number' ? d.like : null,
-          videos: typeof d.video === 'number' ? d.video : null,
-        };
+        if (!apiKeys.has(base)) apiKeys.set(base, Object.keys(d).slice(0, 24).join(','));
+        if (typeof d.fans === 'number' && resp.followers === null) resp.followers = d.fans;
+        if (typeof d.view === 'number' && resp.views === null) resp.views = d.view;
+        if (d.archive && typeof d.archive.view === 'number' && resp.views === null)
+          resp.views = d.archive.view;
+        if (typeof d.like === 'number' && resp.likes === null) resp.likes = d.like;
+        if (typeof d.video === 'number' && resp.videos === null) resp.videos = d.video;
       } catch {
         /* 忽略非 JSON 响应 */
       }
@@ -164,7 +162,15 @@ async function fetchSpaceStats() {
           labels: ['视频', '阅读', '获赞', '总播放', '稿件'].filter((k) => body.includes(k)),
         };
       });
-      console.warn(`[diag] url=${diag.url} login=${diag.hasLogin} verify=${diag.hasVerify} nstat=${diag.hasNstat} labels=${diag.labels.join(',')} apis=${[...apiUrls].slice(0, 5).join(',')}`);
+      console.warn(
+        `[diag] url=${diag.url} login=${diag.hasLogin} verify=${diag.hasVerify} nstat=${diag.hasNstat} ` +
+          `labels=${diag.labels.join(',')} apis=${[...apiUrls].slice(0, 6).join(',')}`,
+      );
+      console.warn(
+        `[diag] keys=${[...apiKeys.entries()]
+          .map(([u, k]) => u.split('/').pop() + ':' + k)
+          .join(' | ')}`,
+      );
     } catch {
       /* 诊断失败不影响采集 */
     }
