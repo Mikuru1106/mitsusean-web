@@ -103,10 +103,12 @@ async function fetchSpaceStats() {
     });
     const page = await context.newPage();
 
-    // 优先: 拦截主页请求中的统计接口
+    // 优先: 拦截主页请求中的统计接口;同时记录出现的空间类接口,便于诊断
     let resp = null;
+    const apiUrls = new Set();
     page.on('response', async (res) => {
       const url = res.url();
+      if (/\/x\/space\/|\/x\/relation\//.test(url)) apiUrls.add(url.split('?')[0]);
       if (!/\/x\/space\/(acc\/info|wbi\/acc\/info|upstat)/.test(url)) return;
       try {
         const j = await res.json();
@@ -135,7 +137,25 @@ async function fetchSpaceStats() {
     } catch {
       /* 允许超时,DOM 为 null */
     }
+    await page.waitForTimeout(1500);
     const dom = await readDomStats(page).catch(() => null);
+
+    // 非敏感诊断: 只输出结构信息,不含 Cookie
+    try {
+      const diag = await page.evaluate(() => {
+        const body = document.body ? document.body.innerText : '';
+        return {
+          url: location.href,
+          hasLogin: /登录|请登录/.test(body),
+          hasVerify: /验证|风控|安全校验/.test(body),
+          hasNstat: !!document.querySelector('.n-stat'),
+          labels: ['视频', '阅读', '获赞', '总播放', '稿件'].filter((k) => body.includes(k)),
+        };
+      });
+      console.warn(`[diag] url=${diag.url} login=${diag.hasLogin} verify=${diag.hasVerify} nstat=${diag.hasNstat} labels=${diag.labels.join(',')} apis=${[...apiUrls].slice(0, 5).join(',')}`);
+    } catch {
+      /* 诊断失败不影响采集 */
+    }
 
     return {
       followers: resp?.followers ?? null,
