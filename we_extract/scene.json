@@ -1,0 +1,215 @@
+{
+	"camera" : 
+	{
+		"center" : "0.00000 0.00000 0.00000",
+		"eye" : "0.00000 0.00000 1.00000",
+		"up" : "0.00000 1.00000 0.00000"
+	},
+	"general" : 
+	{
+		"ambientcolor" : "0.30000 0.30000 0.30000",
+		"bloom" : false,
+		"bloomhdrfeather" : 0.1,
+		"bloomhdriterations" : 8,
+		"bloomhdrscatter" : 1.619,
+		"bloomhdrstrength" : 2.0,
+		"bloomhdrthreshold" : 1.0,
+		"bloomstrength" : 2.0,
+		"bloomthreshold" : 0.64999998,
+		"bloomtint" : "1.00000 1.00000 1.00000",
+		"camerafade" : true,
+		"cameraparallax" : false,
+		"cameraparallaxamount" : 0.5,
+		"cameraparallaxdelay" : 0.1,
+		"cameraparallaxmouseinfluence" : 0.5,
+		"camerapreview" : true,
+		"camerashake" : false,
+		"camerashakeamplitude" : 0.5,
+		"camerashakeroughness" : 1.0,
+		"camerashakespeed" : 3.0,
+		"clearcolor" : "0.70000 0.70000 0.70000",
+		"clearenabled" : true,
+		"farz" : 10000.0,
+		"fov" : 50.0,
+		"hdr" : false,
+		"nearz" : 0.0099999998,
+		"orthogonalprojection" : 
+		{
+			"height" : 1755,
+			"width" : 4096
+		},
+		"perspectiveoverridefov" : 30.0,
+		"skylightcolor" : "0.30000 0.30000 0.30000",
+		"zoom" : 1.0
+	},
+	"objects" : 
+	[
+		{
+			"castshadow" : false,
+			"id" : 16,
+			"image" : "models/Background.json",
+			"name" : "Background",
+			"origin" : "2048.00000 877.50000 0.00000",
+			"parallaxDepth" : "0.19000 0.19000",
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 57,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : 1.760628,
+								"exponent" : 1.0,
+								"scale" : 15,
+								"speed" : 5.0,
+								"strength" : 0.050000001
+							},
+							"id" : 59,
+							"textures" : [ null, "masks/waterwaves_mask_a84b22bc" ]
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 22,
+			"image" : "models/K.json",
+			"name" : "K",
+			"origin" : "2048.00000 877.50000 0.00000",
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 43,
+					"name" : "飘动",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : 2.0363443,
+								"exponent" : 1.0,
+								"scale" : 15,
+								"speed" : 3.5,
+								"strength" : 0.079999998
+							},
+							"id" : 45,
+							"textures" : [ null, "masks/waterwaves_mask_0b8fbb3c" ]
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 28,
+			"image" : "models/K_Fair.json",
+			"name" : "K_Fair",
+			"parent" : 22,
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"animationlayers" : 
+			[
+				{
+					"additive" : false,
+					"animation" : 123,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 129,
+					"name" : "飘带解算(",
+					"rate" : 1.0,
+					"visible" : true
+				}
+			],
+			"castshadow" : false,
+			"id" : 32,
+			"image" : "models/K_Necktie.json",
+			"name" : "K_Necktie",
+			"parent" : 22,
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"animationlayers" : 
+			[
+				{
+					"additive" : false,
+					"animation" : 76,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 80,
+					"name" : "眨眼_under",
+					"rate" : 1.0,
+					"visible" : true
+				}
+			],
+			"castshadow" : false,
+			"id" : 58,
+			"image" : "models/K_Eye_under.json",
+			"name" : "K_Eye_under",
+			"origin" : "2048.42212 881.48157 0.00000",
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"animationlayers" : 
+			[
+				{
+					"additive" : false,
+					"animation" : 107,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 112,
+					"name" : "眨眼_up",
+					"rate" : 1.0,
+					"visible" : true
+				}
+			],
+			"castshadow" : false,
+			"id" : 56,
+			"image" : "models/K_Eye_up.json",
+			"name" : "K_Eye_up",
+			"parent" : 58,
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"castshadow" : false,
+			"id" : 44,
+			"image" : "models/what.json",
+			"name" : "what",
+			"origin" : "2048.00000 877.50000 0.00000",
+			"size" : "4096.00000 1755.00000"
+		},
+		{
+			"id" : 69,
+			"maxtime" : 5.0,
+			"mintime" : 1.0,
+			"muteineditor" : false,
+			"name" : "1.Uneasy Tranquility.wav",
+			"origin" : "-277.31836 1996.17163 0.00000",
+			"playbackmode" : "loop",
+			"sound" : [ "sounds/1.Uneasy Tranquility.wav" ],
+			"startsilent" : false,
+			"volume" : 1.0
+		}
+	],
+	"version" : 4
+}

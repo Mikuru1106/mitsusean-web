@@ -1,0 +1,29 @@
+name: Daily fan snapshot
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # 北京时间每天 09:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect snapshot
+        run: npm run snapshot
+      - name: Commit snapshot
+        run: |
+          git config user.name "snapshot-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add public/data/fans-history.json
+          git diff --cached --quiet || git commit -m "chore: daily fan snapshot"
+          git push

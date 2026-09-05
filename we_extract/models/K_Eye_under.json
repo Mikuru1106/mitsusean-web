@@ -1,0 +1,5 @@
+{
+	"autosize" : true,
+	"material" : "materials/K_Eye_under.json",
+	"puppet" : "models/K_Eye_under_puppet.mdl"
+}

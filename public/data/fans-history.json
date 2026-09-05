@@ -1,0 +1,24 @@
+{
+  "updatedAt": "2026-09-05T06:16:05.295Z",
+  "snapshots": [
+    {
+      "date": "2026-09-01",
+      "followers": 175295,
+      "rate1": null,
+      "rate7": null
+    },
+    {
+      "date": "2026-09-02",
+      "followers": 175879,
+      "rate1": 584,
+      "rate7": null
+    },
+    {
+      "date": "2026-09-05",
+      "followers": 177375,
+      "rate1": null,
+      "rate7": null
+    }
+  ],
+  "historyStart": "2026-09-01"
+}
