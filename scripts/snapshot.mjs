@@ -55,15 +55,10 @@ function parseBiliNum(s) {
   return Math.round(n);
 }
 
-/** 从个人主页统计卡(DOM)读取 视频/阅读/获赞,返回 { videos, views, likes } */
+/** 从个人主页统计卡和可见文本读取 视频/阅读/获赞 */
 async function readDomStats(page) {
-  try {
-    await page.waitForSelector('.n-stat__item', { timeout: 8000 });
-  } catch {
-    return null;
-  }
-  const items = await page.$$('.n-stat__item');
   const out = { videos: null, views: null, likes: null };
+  const items = await page.$$('.n-stat__item');
   for (const it of items) {
     let title = null;
     try {
@@ -81,6 +76,14 @@ async function readDomStats(page) {
     if (title && title.includes('视频')) out.videos = n;
     else if (title && title.includes('阅读')) out.views = n;
     else if (title && title.includes('获赞')) out.likes = n;
+  }
+
+  // 页面版本变更时统计卡类名可能变化,用标签附近的文本作兜底。
+  const bodyText = await page.locator('body').innerText().catch(() => '');
+  for (const [label, key] of [['视频', 'videos'], ['阅读', 'views'], ['获赞', 'likes']]) {
+    if (out[key] !== null) continue;
+    const match = bodyText.match(new RegExp(`${label}\\s*([\\d,.]+\\s*(?:万|亿)?)`));
+    if (match) out[key] = parseBiliNum(match[1]);
   }
   return out;
 }
