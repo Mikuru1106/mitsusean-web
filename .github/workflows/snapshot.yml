@@ -20,6 +20,8 @@ jobs:
           node-version: 22
       - name: Collect snapshot
         run: npm run snapshot
+        env:
+          BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
       - name: Commit snapshot
         run: |
           git config user.name "snapshot-bot"

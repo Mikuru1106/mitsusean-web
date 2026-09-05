@@ -34,14 +34,22 @@ export interface BiliStats {
    ================================================== */
 interface FansHistoryFile {
   updatedAt: string;
-  snapshots: Array<{ date: string; followers: number; rate1?: number | null; rate7?: number | null }>;
+  snapshots: Array<{
+    date: string;
+    followers: number;
+    views?: number | null;
+    likes?: number | null;
+    videos?: number | null;
+    rate1?: number | null;
+    rate7?: number | null;
+  }>;
 }
 
 /** 历史记录起点:2026-09-01(真实采集开始日,zeroroku 式) */
 const HISTORY_START = '2026-09-01';
 
 /** 把采集器 JSON 构建为快照序列(只含 HISTORY_START 起的真实记录);
- *  views/likes/videos 无免登录实时接口,沿用静态表同日值(缺失则取最后一条) */
+ *  播放/获赞/稿件由采集器写入(需 Cookie);缺失时沿用静态表同日值(缺失则取最后一条) */
 function buildSnapshots(json: FansHistoryFile): BiliSnapshot[] {
   const statByDate = new Map(staticSnaps.map((s) => [s.date, s]));
   const lastStatic = staticSnaps[staticSnaps.length - 1];
@@ -52,9 +60,9 @@ function buildSnapshots(json: FansHistoryFile): BiliSnapshot[] {
       return {
         date: j.date,
         followers: j.followers,
-        views: stat.views,
-        likes: stat.likes,
-        videos: stat.videos,
+        views: j.views ?? stat.views,
+        likes: j.likes ?? stat.likes,
+        videos: j.videos ?? stat.videos,
         rate1: j.rate1 ?? null,
         rate7: j.rate7 ?? null,
       };
