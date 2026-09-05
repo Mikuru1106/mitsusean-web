@@ -1,9 +1,11 @@
 /**
- * zeroroku 式每日快照采集器
+ * zeroroku 式每日快照采集器(浏览器版)
  *
  * 功能:
- *   1. 请求 B站公开接口获取当前粉丝数(免登录)
- *   2. 若配置了 BILI_COOKIE,再经 WBI 签名请求空间接口获取总播放/总获赞/稿件数
+ *   1. 请求 B站公开接口获取当前粉丝数(免登录,稳定来源)
+ *   2. 若配置了 BILI_COOKIE,启动 Chromium 带登录态打开个人主页,
+ *      从主页请求的统计接口(优先)与页面统计卡(DOM 兜底)读取
+ *      总播放 / 总获赞 / 稿件数
  *   3. 读取 public/data/fans-history.json 历史快照
  *   4. 计算 rate1(较昨日涨粉) / rate7(较7日前涨粉)
  *   5. 当天已有快照则更新,否则追加
@@ -11,15 +13,15 @@
  * 用法:
  *   npm run snapshot
  *   可选: 设置环境变量 BILI_COOKIE="SESSDATA=...; buvid3=..." 以采集播放/获赞/稿件
+ *   需要 Playwright 浏览器: 首次运行前执行 npx playwright install chromium
  *
- * 定时(Windows 任务计划程序 或 cron):
- *   每天固定时间执行一次,例如每天 09:00:
- *     0 9 * * * cd /path/to/mitsusean-web && node scripts/snapshot.mjs
+ * 定时(GitHub Actions 或 cron):
+ *   每天固定时间执行一次,例如每天 09:00(北京时间)。
  */
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
+import { chromium } from 'playwright';
 
 const MID = 431115683; // 水聖安
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,16 +29,7 @@ const DATA_FILE = resolve(__dirname, '../public/data/fans-history.json');
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
-const API_HEADERS = { 'User-Agent': UA, Referer: 'https://space.bilibili.com/' };
 const COOKIE = process.env.BILI_COOKIE || '';
-
-/** WBI 签名固定混淆表 */
-const MIXIN_KEY_ENC_TAB = [
-  46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28,
-  14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21,
-  56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
-];
-const md5 = (s) => createHash('md5').update(s).digest('hex');
 
 async function fetchFollower() {
   const url = `https://api.bilibili.com/x/relation/stat?vmid=${MID}`;
@@ -49,45 +42,110 @@ async function fetchFollower() {
   return json.data.follower;
 }
 
-/** 从 nav 接口获取 WBI 的 mixin key(未登录也可返回 wbi_img) */
-async function getMixinKey(headers) {
-  const nav = await fetch('https://api.bilibili.com/x/web-interface/nav', { headers }).then((r) => r.json());
-  const { img_url, sub_url } = nav?.data?.wbi_img ?? {};
-  if (!img_url || !sub_url) throw new Error('未获取到 wbi_img');
-  const key = img_url.split('/').pop().split('.')[0] + sub_url.split('/').pop().split('.')[0];
-  let mixin = '';
-  for (const i of MIXIN_KEY_ENC_TAB) mixin += key[i];
-  return mixin.slice(0, 32);
+/** 解析 B 站统计文案:"118" -> 118, "1.2万" -> 12000, "3.4亿" -> 340000000 */
+function parseBiliNum(s) {
+  if (s === null || s === undefined) return null;
+  const text = String(s).trim().toLowerCase().replace(/,/g, '');
+  const m = text.match(/^([\d.]+)\s*(万|亿)?$/);
+  if (!m) return null;
+  let n = parseFloat(m[1]);
+  if (Number.isNaN(n)) return null;
+  if (m[2] === '万') n *= 1e4;
+  if (m[2] === '亿') n *= 1e8;
+  return Math.round(n);
+}
+
+/** 从个人主页统计卡(DOM)读取 视频/阅读/获赞,返回 { videos, views, likes } */
+async function readDomStats(page) {
+  try {
+    await page.waitForSelector('.n-stat__item', { timeout: 8000 });
+  } catch {
+    return null;
+  }
+  const items = await page.$$('.n-stat__item');
+  const out = { videos: null, views: null, likes: null };
+  for (const it of items) {
+    let title = null;
+    try {
+      title = (await it.$eval('.n-stat__title', (e) => e.textContent)).trim();
+    } catch {
+      title = null;
+    }
+    let numText = null;
+    try {
+      numText = (await it.$eval('.n-stat__num', (e) => e.textContent)).trim();
+    } catch {
+      numText = (await it.innerText()).replace(/\s+/g, ' ').trim().split(' ').pop();
+    }
+    const n = parseBiliNum(numText);
+    if (title && title.includes('视频')) out.videos = n;
+    else if (title && title.includes('阅读')) out.views = n;
+    else if (title && title.includes('获赞')) out.likes = n;
+  }
+  return out;
 }
 
 /**
- * 带登录 Cookie 请求空间信息接口,返回总播放/总获赞/稿件数/粉丝数。
- * 未配置 BILI_COOKIE 时返回 null(仅采粉丝)。播放/获赞/稿件需登录态,免登录会被风控拦截。
+ * 带登录 Cookie 启动 Chromium 打开个人主页,采集总播放/总获赞/稿件数。
+ * 未配置 BILI_COOKIE 时返回 null(仅采粉丝);异常或未读到数据时降级为 null,不影响粉丝采集。
  */
 async function fetchSpaceStats() {
   if (!COOKIE) return null;
-  const headers = { ...API_HEADERS, Cookie: COOKIE };
-  const mixin = await getMixinKey(headers);
-  const params = { mid: String(MID), wts: Math.round(Date.now() / 1000) };
-  const query = Object.keys(params)
-    .sort()
-    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
-    .join('&');
-  const url = `https://api.bilibili.com/x/space/acc/info?${query}&w_rid=${md5(query + mixin)}`;
-  const res = await fetch(url, { headers }).then((r) => r.json());
-  if (res?.code !== 0 || !res?.data) {
-    throw new Error(`空间接口异常: ${JSON.stringify(res).slice(0, 200)}`);
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+    const context = await browser.newContext({
+      userAgent: UA,
+      extraHTTPHeaders: { Cookie: COOKIE, Referer: 'https://space.bilibili.com/' },
+    });
+    const page = await context.newPage();
+
+    // 优先: 拦截主页请求中的统计接口
+    let resp = null;
+    page.on('response', async (res) => {
+      const url = res.url();
+      if (!/\/x\/space\/(acc\/info|wbi\/acc\/info|upstat)/.test(url)) return;
+      try {
+        const j = await res.json();
+        const d = j?.data;
+        if (!d) return;
+        resp = {
+          followers: typeof d.fans === 'number' ? d.fans : null,
+          views:
+            typeof d.view === 'number'
+              ? d.view
+              : d.archive && typeof d.archive.view === 'number'
+                ? d.archive.view
+                : null,
+          likes: typeof d.like === 'number' ? d.like : null,
+          videos: typeof d.video === 'number' ? d.video : null,
+        };
+      } catch {
+        /* 忽略非 JSON 响应 */
+      }
+    });
+
+    await page.goto(`https://space.bilibili.com/${MID}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // 等统计卡渲染
+    try {
+      await page.waitForSelector('.n-stat__item', { timeout: 8000 });
+    } catch {
+      /* 允许超时,DOM 为 null */
+    }
+    const dom = await readDomStats(page).catch(() => null);
+
+    return {
+      followers: resp?.followers ?? null,
+      views: resp?.views ?? dom?.views ?? null,
+      likes: resp?.likes ?? dom?.likes ?? null,
+      videos: resp?.videos ?? dom?.videos ?? null,
+    };
+  } catch (e) {
+    console.warn('浏览器采集异常(降级仅采粉丝):', e.message);
+    return null;
+  } finally {
+    if (browser) await browser.close().catch(() => {});
   }
-  const d = res.data;
-  if (typeof d.view !== 'number' && typeof d.like !== 'number' && typeof d.video !== 'number') {
-    console.warn(`[acc/info keys] ${Object.keys(d).join(',')}`);
-  }
-  return {
-    followers: typeof d.fans === 'number' ? d.fans : null,
-    views: typeof d.view === 'number' ? d.view : null,
-    likes: typeof d.like === 'number' ? d.like : null,
-    videos: typeof d.video === 'number' ? d.video : null,
-  };
 }
 
 function todayCN() {
@@ -154,7 +212,7 @@ async function main() {
 
   const hasSpace = space && (space.views !== null || space.likes !== null || space.videos !== null);
   let spaceNote = '';
-  if (space) spaceNote = hasSpace ? '' : ' (Cookie 已设置但空间接口未返回播放/获赞/稿件)';
+  if (space) spaceNote = hasSpace ? '' : ' (Cookie 已设置但未读到播放/获赞/稿件)';
   else spaceNote = ' (未设置 BILI_COOKIE)';
   console.log(
     `✓ ${date} 粉丝 ${entry.followers} | rate1=${rate1 ?? '-'} rate7=${rate7 ?? '-'} | ` +
