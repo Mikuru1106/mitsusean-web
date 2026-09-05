@@ -145,9 +145,12 @@ async function main() {
   await writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 
   const hasSpace = space && (space.views !== null || space.likes !== null || space.videos !== null);
+  let spaceNote = '';
+  if (space) spaceNote = hasSpace ? '' : ' (Cookie 已设置但空间接口未返回播放/获赞/稿件)';
+  else spaceNote = ' (未设置 BILI_COOKIE)';
   console.log(
     `✓ ${date} 粉丝 ${entry.followers} | rate1=${rate1 ?? '-'} rate7=${rate7 ?? '-'} | ` +
-      `播放 ${entry.views ?? '-'} 获赞 ${entry.likes ?? '-'} 稿件 ${entry.videos ?? '-'}${hasSpace ? '' : ' (未配置 Cookie,播放/获赞/稿件未采集)'} | ` +
+      `播放 ${entry.views ?? '-'} 获赞 ${entry.likes ?? '-'} 稿件 ${entry.videos ?? '-'}${spaceNote} | ` +
       `快照总数 ${snaps.length}`,
   );
 }
