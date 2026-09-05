@@ -73,12 +73,15 @@ async function fetchSpaceStats() {
     .sort()
     .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
     .join('&');
-  const url = `https://api.bilibili.com/x/space/wbi/acc/info?${query}&w_rid=${md5(query + mixin)}`;
+  const url = `https://api.bilibili.com/x/space/acc/info?${query}&w_rid=${md5(query + mixin)}`;
   const res = await fetch(url, { headers }).then((r) => r.json());
   if (res?.code !== 0 || !res?.data) {
     throw new Error(`空间接口异常: ${JSON.stringify(res).slice(0, 200)}`);
   }
   const d = res.data;
+  if (typeof d.view !== 'number' && typeof d.like !== 'number' && typeof d.video !== 'number') {
+    console.warn(`[acc/info keys] ${Object.keys(d).join(',')}`);
+  }
   return {
     followers: typeof d.fans === 'number' ? d.fans : null,
     views: typeof d.view === 'number' ? d.view : null,
@@ -102,7 +105,12 @@ function dateOffsetCN(dateStr, n) {
 
 async function main() {
   const follower = await fetchFollower();
-  const space = await fetchSpaceStats(); // 无 Cookie 时为 null
+  let space = null;
+  try {
+    space = await fetchSpaceStats(); // 无 Cookie 时为 null;异常时降级,不影响粉丝采集
+  } catch (e) {
+    console.warn('✗ 空间指标采集失败(降级仅采粉丝):', e.message);
+  }
   const date = todayCN();
 
   let data = { updatedAt: '', snapshots: [] };
