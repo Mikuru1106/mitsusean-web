@@ -96,10 +96,20 @@ async function fetchSpaceStats() {
   if (!COOKIE) return null;
   let browser;
   try {
-    browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled'],
+    });
     const context = await browser.newContext({
       userAgent: UA,
-      extraHTTPHeaders: { Cookie: COOKIE, Referer: 'https://space.bilibili.com/' },
+      viewport: { width: 1440, height: 900 },
+      screen: { width: 1440, height: 900 },
+      locale: 'zh-CN',
+      timezoneId: 'Asia/Shanghai',
+      extraHTTPHeaders: { Cookie: COOKIE, Referer: 'https://www.bilibili.com/' },
+    });
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
     });
     const page = await context.newPage();
 
@@ -108,7 +118,7 @@ async function fetchSpaceStats() {
     const apiUrls = new Set();
     page.on('response', async (res) => {
       const url = res.url();
-      if (/\/x\/space\/|\/x\/relation\//.test(url)) apiUrls.add(url.split('?')[0]);
+      if (/\/x\/(space|relation|web-interface|wbi)/.test(url)) apiUrls.add(url.split('?')[0]);
       if (!/\/x\/space\/(acc\/info|wbi\/acc\/info|upstat)/.test(url)) return;
       try {
         const j = await res.json();
@@ -131,6 +141,8 @@ async function fetchSpaceStats() {
     });
 
     await page.goto(`https://space.bilibili.com/${MID}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // 空间页是重型 SPA,给足渲染时间
+    await page.waitForTimeout(8000);
     // 等统计卡渲染
     try {
       await page.waitForSelector('.n-stat__item', { timeout: 8000 });
