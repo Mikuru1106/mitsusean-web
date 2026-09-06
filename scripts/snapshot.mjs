@@ -1,27 +1,26 @@
 /**
- * zeroroku 式每日快照采集器(浏览器版)
+ * zeroroku 式每日快照采集器
  *
  * 功能:
  *   1. 请求 B站公开接口获取当前粉丝数(免登录,稳定来源)
- *   2. 若配置了 BILI_COOKIE,启动 Chromium 带登录态打开个人主页,
- *      从主页请求的统计接口(优先)与页面统计卡(DOM 兜底)读取
- *      总播放 / 总获赞 / 稿件数
+ *   2. 若配置了 BILI_COOKIE,用 WBI 签名请求 upstat 采集总播放/总获赞,
+ *      用 navnum 采集稿件总数(纯 HTTP,无需浏览器)
  *   3. 读取 public/data/fans-history.json 历史快照
  *   4. 计算 rate1(较昨日涨粉) / rate7(较7日前涨粉)
  *   5. 当天已有快照则更新,否则追加
  *
  * 用法:
  *   npm run snapshot
- *   可选: 设置环境变量 BILI_COOKIE="SESSDATA=...; buvid3=..." 以采集播放/获赞/稿件
- *   需要 Playwright 浏览器: 首次运行前执行 npx playwright install chromium
+ *   可选: 设置环境变量 BILI_COOKIE="SESSDATA=...; bili_jct=...; buvid3=..."
+ *   以采集播放/获赞/稿件(总播放/总获赞接口需要登录态 + WBI 签名)
  *
  * 定时(GitHub Actions 或 cron):
  *   每天固定时间执行一次,例如每天 09:00(北京时间)。
  */
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 
 const MID = 431115683; // 水聖安
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -42,150 +41,97 @@ async function fetchFollower() {
   return json.data.follower;
 }
 
-/** 解析 B 站统计文案:"118" -> 118, "1.2万" -> 12000, "3.4亿" -> 340000000 */
-function parseBiliNum(s) {
-  if (s === null || s === undefined) return null;
-  const text = String(s).trim().toLowerCase().replace(/,/g, '');
-  const m = text.match(/^([\d.]+)\s*(万|亿)?$/);
-  if (!m) return null;
-  let n = parseFloat(m[1]);
-  if (Number.isNaN(n)) return null;
-  if (m[2] === '万') n *= 1e4;
-  if (m[2] === '亿') n *= 1e8;
-  return Math.round(n);
+const MIXIN_KEY_ENC_TAB = [
+  46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43,
+  5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16,
+  24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59,
+  6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
+];
+
+function getMixinKey(original) {
+  return MIXIN_KEY_ENC_TAB.map((index) => original[index]).join('').slice(0, 32);
 }
 
-/** 从个人主页统计卡和可见文本读取 视频/阅读/获赞 */
-async function readDomStats(page) {
-  const out = { videos: null, views: null, likes: null };
-  const items = await page.$$('.n-stat__item');
-  for (const it of items) {
-    let title = null;
-    try {
-      title = (await it.$eval('.n-stat__title', (e) => e.textContent)).trim();
-    } catch {
-      title = null;
-    }
-    let numText = null;
-    try {
-      numText = (await it.$eval('.n-stat__num', (e) => e.textContent)).trim();
-    } catch {
-      numText = (await it.innerText()).replace(/\s+/g, ' ').trim().split(' ').pop();
-    }
-    const n = parseBiliNum(numText);
-    if (title && title.includes('视频')) out.videos = n;
-    else if (title && title.includes('阅读')) out.views = n;
-    else if (title && title.includes('获赞')) out.likes = n;
-  }
-
-  // 页面版本变更时统计卡类名可能变化,用标签附近的文本作兜底。
-  const bodyText = await page.locator('body').innerText().catch(() => '');
-  for (const [label, key] of [['视频', 'videos'], ['阅读', 'views'], ['获赞', 'likes']]) {
-    if (out[key] !== null) continue;
-    const match = bodyText.match(new RegExp(`${label}\\s*([\\d,.]+\\s*(?:万|亿)?)`));
-    if (match) out[key] = parseBiliNum(match[1]);
-  }
-  return out;
+async function fetchJson(url, headers = {}) {
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-/**
- * 带登录 Cookie 启动 Chromium 打开个人主页,采集总播放/总获赞/稿件数。
- * 未配置 BILI_COOKIE 时返回 null(仅采粉丝);异常或未读到数据时降级为 null,不影响粉丝采集。
- */
+async function fetchWbiKeys() {
+  const json = await fetchJson('https://api.bilibili.com/x/web-interface/nav', {
+    'User-Agent': UA,
+    Referer: 'https://space.bilibili.com/',
+    ...(COOKIE ? { Cookie: COOKIE } : {}),
+  });
+  const images = json?.data?.wbi_img;
+  if (!images?.img_url || !images?.sub_url) throw new Error('WBI key 缺失');
+  const keyFromUrl = (url) => url.split('/').pop().split('.')[0];
+  return { imgKey: keyFromUrl(images.img_url), subKey: keyFromUrl(images.sub_url) };
+}
+
+function signWbi(params, imgKey, subKey) {
+  const queryParams = { ...params, wts: Math.round(Date.now() / 1000) };
+  const query = Object.keys(queryParams)
+    .sort()
+    .map((key) => `${key}=${encodeURIComponent(queryParams[key])}`)
+    .join('&');
+  const wRid = createHash('md5').update(query + getMixinKey(imgKey + subKey)).digest('hex');
+  return `${query}&w_rid=${wRid}`;
+}
+
+/** 带登录 Cookie 调 WBI upstat 获取总播放/总获赞。 */
+async function fetchUpstat() {
+  if (!COOKIE) return null;
+  const { imgKey, subKey } = await fetchWbiKeys();
+  const query = signWbi({ mid: MID }, imgKey, subKey);
+  const json = await fetchJson(`https://api.bilibili.com/x/space/upstat?${query}`, {
+    'User-Agent': UA,
+    Referer: 'https://space.bilibili.com/',
+    Cookie: COOKIE,
+  });
+  const archive = json?.code === 0 ? json.data?.archive : null;
+  if (!archive) return null;
+  return {
+    views: typeof archive.view === 'number' ? archive.view : null,
+    likes: typeof json.data?.likes === 'number' ? json.data.likes : null,
+  };
+}
+
+/** navnum 提供稿件总数,带 Cookie 时调用可避免页面 DOM 变化影响。 */
+async function fetchNavnum() {
+  const json = await fetchJson(`https://api.bilibili.com/x/space/navnum?mid=${MID}`, {
+    'User-Agent': UA,
+    Referer: 'https://space.bilibili.com/',
+    ...(COOKIE ? { Cookie: COOKIE } : {}),
+  });
+  const video = json?.code === 0 ? json.data?.video : null;
+  return typeof video === 'number' ? video : null;
+}
+
+/** 使用稳定的 WBI/HTTP 接口采集空间指标,失败时降级为 null,不影响粉丝采集。 */
 async function fetchSpaceStats() {
   if (!COOKIE) return null;
-  let browser;
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled'],
-    });
-    const context = await browser.newContext({
-      userAgent: UA,
-      viewport: { width: 1440, height: 900 },
-      screen: { width: 1440, height: 900 },
-      locale: 'zh-CN',
-      timezoneId: 'Asia/Shanghai',
-      extraHTTPHeaders: { Cookie: COOKIE, Referer: 'https://www.bilibili.com/' },
-    });
-    await context.addInitScript(() => {
-      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    });
-    const page = await context.newPage();
-
-    // 拦截所有空间类接口,广度解析总播放/获赞/稿件/粉丝,并记录各接口字段供诊断
-    let resp = { followers: null, views: null, likes: null, videos: null };
-    const apiUrls = new Set();
-    const apiKeys = new Map();
-    page.on('response', async (res) => {
-      const url = res.url();
-      if (!/\/x\/(space|relation|wbi|web-interface)/.test(url)) return;
-      const base = url.split('?')[0];
-      apiUrls.add(base);
-      try {
-        const j = await res.json();
-        const d = j?.data;
-        if (!d) return;
-        if (!apiKeys.has(base)) apiKeys.set(base, Object.keys(d).slice(0, 24).join(','));
-        if (typeof d.fans === 'number' && resp.followers === null) resp.followers = d.fans;
-        if (typeof d.view === 'number' && resp.views === null) resp.views = d.view;
-        if (d.archive && typeof d.archive.view === 'number' && resp.views === null)
-          resp.views = d.archive.view;
-        if (typeof d.like === 'number' && resp.likes === null) resp.likes = d.like;
-        if (typeof d.video === 'number' && resp.videos === null) resp.videos = d.video;
-      } catch {
-        /* 忽略非 JSON 响应 */
-      }
-    });
-
-    await page.goto(`https://space.bilibili.com/${MID}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    // 空间页是重型 SPA,给足渲染时间
-    await page.waitForTimeout(8000);
-    // 等统计卡渲染
-    try {
-      await page.waitForSelector('.n-stat__item', { timeout: 8000 });
-    } catch {
-      /* 允许超时,DOM 为 null */
-    }
-    await page.waitForTimeout(1500);
-    const dom = await readDomStats(page).catch(() => null);
-
-    // 非敏感诊断: 只输出结构信息,不含 Cookie
-    try {
-      const diag = await page.evaluate(() => {
-        const body = document.body ? document.body.innerText : '';
-        return {
-          url: location.href,
-          hasLogin: /登录|请登录/.test(body),
-          hasVerify: /验证|风控|安全校验/.test(body),
-          hasNstat: !!document.querySelector('.n-stat'),
-          labels: ['视频', '阅读', '获赞', '总播放', '稿件'].filter((k) => body.includes(k)),
-        };
-      });
-      console.warn(
-        `[diag] url=${diag.url} login=${diag.hasLogin} verify=${diag.hasVerify} nstat=${diag.hasNstat} ` +
-          `labels=${diag.labels.join(',')} apis=${[...apiUrls].slice(0, 6).join(',')}`,
-      );
-      console.warn(
-        `[diag] keys=${[...apiKeys.entries()]
-          .map(([u, k]) => u.split('/').pop() + ':' + k)
-          .join(' | ')}`,
-      );
-    } catch {
-      /* 诊断失败不影响采集 */
-    }
-
+    const [upstat, videos] = await Promise.all([
+      fetchUpstat().catch((error) => {
+        console.warn('WBI 播放/获赞采集失败:', error.message);
+        return null;
+      }),
+      fetchNavnum().catch((error) => {
+        console.warn('稿件数采集失败:', error.message);
+        return null;
+      }),
+    ]);
     return {
-      followers: resp?.followers ?? null,
-      views: resp?.views ?? dom?.views ?? null,
-      likes: resp?.likes ?? dom?.likes ?? null,
-      videos: resp?.videos ?? dom?.videos ?? null,
+      followers: null,
+      views: upstat?.views ?? null,
+      likes: upstat?.likes ?? null,
+      videos,
     };
-  } catch (e) {
-    console.warn('浏览器采集异常(降级仅采粉丝):', e.message);
+  } catch (error) {
+    console.warn('空间指标采集异常(降级仅采粉丝):', error.message);
     return null;
-  } finally {
-    if (browser) await browser.close().catch(() => {});
   }
 }
 

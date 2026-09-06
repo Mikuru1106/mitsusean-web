@@ -22,19 +22,18 @@ function StatCard({
   sub,
   value,
   daily,
-  rate1,
-  rate7,
+  week,
 }: {
   icon: string;
   label: string;
   sub: string;
   value: number;
-  daily: number;
-  rate1?: number | null;
-  rate7?: number | null;
+  daily: number | null;
+  week?: number | null;
 }) {
   const shown = useCountUp(value);
   const fmtDelta = (n: number) => `${n >= 0 ? '+' : ''}${formatNum(n)}`;
+  const deltaColor = (n: number) => (n < 0 ? 'text-[#f68a95]' : 'text-[#8be9b8]');
 
   return (
     <div className="obs-card group">
@@ -47,17 +46,15 @@ function StatCard({
       </p>
       <p className="mt-2 text-[11px] text-white/50">
         {label}
-        {rate1 != null ? (
-          <span className="ml-2 font-bold text-[#8be9b8]">
-            {fmtDelta(rate1)}
-            {rate7 != null ? (
-              <span className="text-white/40"> · 7日 {fmtDelta(rate7)}</span>
+        {daily != null ? (
+          <span className={`ml-2 font-bold ${deltaColor(daily)}`}>
+            {fmtDelta(daily)}/日
+            {week != null ? (
+              <span className="text-white/40"> · 7日 {fmtDelta(week)}</span>
             ) : null}
           </span>
         ) : (
-          <span className="ml-2 font-bold text-[#8be9b8]">
-            {fmtDelta(daily)} / 日
-          </span>
+          <span className="ml-2 text-white/30">待采集</span>
         )}
       </p>
     </div>
@@ -436,7 +433,7 @@ export default function Observatory() {
 
           {/* Stat cards */}
           <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <StatCard icon="💧" label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} rate1={stats.rate1} rate7={stats.rate7} />
+            <StatCard icon="💧" label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} week={stats.rate7} />
             <StatCard icon="▶" label="总播放量" sub="VIEWS" value={stats.latest.views} daily={stats.daily.views} />
             <StatCard icon="❤" label="总获赞" sub="LIKES" value={stats.latest.likes} daily={stats.daily.likes} />
             <StatCard icon="📼" label="稿件数" sub="WORKS" value={stats.latest.videos} daily={stats.daily.videos} />

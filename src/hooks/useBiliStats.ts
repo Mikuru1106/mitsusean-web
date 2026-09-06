@@ -20,11 +20,12 @@ export interface BiliStats {
   updated: string;
   /** true = 已用 B站实时接口覆盖「今日」快照;false = 仅历史快照 */
   live: boolean;
-  /** 最新一天的日涨粉(来自采集器计算) */
+  /** 最新一天的日涨粉(较昨日;存在缺口时为日均) */
   rate1: number | null;
   /** 近7日涨粉 */
   rate7: number | null;
-  daily: { followers: number; views: number; likes: number; videos: number };
+  /** 各项指标的每日增长(按日历日缺口分摊的日均;无有效对比时为 null) */
+  daily: { followers: number | null; views: number | null; likes: number | null; videos: number | null };
   snapshots: BiliSnapshot[];
 }
 
@@ -48,26 +49,77 @@ interface FansHistoryFile {
 /** 历史记录起点:2026-09-01(真实采集开始日,zeroroku 式) */
 const HISTORY_START = '2026-09-01';
 
-/** 把采集器 JSON 构建为快照序列(只含 HISTORY_START 起的真实记录);
- *  播放/获赞/稿件由采集器写入(需 Cookie);缺失时沿用静态表同日值(缺失则取最后一条) */
+/** 把采集器 JSON 构建为快照序列(只含 HISTORY_START 起的真实记录)。
+ *  播放/获赞/稿件由采集器写入(需 Cookie),缺失时保留 null——「每日增长」只基于真实数据计算,
+ *  总量展示时的静态表兜底由 applyStaticFallback 单独负责,避免把兜底恒值误算成 +0。 */
 function buildSnapshots(json: FansHistoryFile): BiliSnapshot[] {
-  const statByDate = new Map(staticSnaps.map((s) => [s.date, s]));
-  const lastStatic = staticSnaps[staticSnaps.length - 1];
   return json.snapshots
     .filter((s) => s.date >= HISTORY_START)
-    .map((j) => {
-      const stat = statByDate.get(j.date) ?? lastStatic;
-      return {
-        date: j.date,
-        followers: j.followers,
-        views: j.views ?? stat.views,
-        likes: j.likes ?? stat.likes,
-        videos: j.videos ?? stat.videos,
-        rate1: j.rate1 ?? null,
-        rate7: j.rate7 ?? null,
-      };
-    })
+    .map((j) => ({
+      date: j.date,
+      followers: j.followers,
+      views: j.views ?? Number.NaN,
+      likes: j.likes ?? Number.NaN,
+      videos: j.videos ?? Number.NaN,
+      rate1: j.rate1 ?? null,
+      rate7: j.rate7 ?? null,
+    }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** 总量展示兜底:某日播放/获赞/稿件缺失(采集器未读到,记为 NaN)时,沿用静态表同日值(同日缺失则取最后一条) */
+function applyStaticFallback(s: BiliSnapshot): BiliSnapshot {
+  const statByDate = new Map(staticSnaps.map((x) => [x.date, x]));
+  const stat = statByDate.get(s.date) ?? staticSnaps[staticSnaps.length - 1];
+  return {
+    ...s,
+    views: Number.isNaN(s.views) ? stat.views : s.views,
+    likes: Number.isNaN(s.likes) ? stat.likes : s.likes,
+    videos: Number.isNaN(s.videos) ? stat.videos : s.videos,
+  };
+}
+
+/** 两个 YYYY-MM-DD 日期的自然日差(按 UTC 求,避免时区换算) */
+function calendarDays(a: string, b: string): number {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  return Math.round(
+    (Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000,
+  );
+}
+
+type MetricKey = 'followers' | 'views' | 'likes' | 'videos';
+
+/**
+ * 某指标最新快照相对最近一条「有效」快照的每日增长(日均)。
+ * 数据有缺口时按日历日数分摊,使「每日增长」反映真实日均水平,而非把 N 天累计标成「每日」。
+ * 最新值缺失、或该指标从未出现过两次有效记录时返回 null。
+ */
+function dailyDelta(snaps: BiliSnapshot[], key: MetricKey): number | null {
+  if (snaps.length < 2) return null;
+  const last = snaps[snaps.length - 1];
+  const lastV = last[key] as number;
+  if (Number.isNaN(lastV)) return null;
+  for (let i = snaps.length - 2; i >= 0; i--) {
+    const s = snaps[i];
+    const sv = s[key] as number;
+    if (Number.isNaN(sv)) continue;
+    const gap = calendarDays(s.date, last.date);
+    if (gap <= 0) return null;
+    return Math.round((lastV - sv) / gap);
+  }
+  return null;
+}
+
+/** 粉丝「近7日」累计增长:最新 - 距今≥7天的最近一条快照;不足7天时返回 null */
+function weekDelta(snaps: BiliSnapshot[]): number | null {
+  if (snaps.length < 2) return null;
+  const last = snaps[snaps.length - 1];
+  for (let i = snaps.length - 2; i >= 0; i--) {
+    const gap = calendarDays(snaps[i].date, last.date);
+    if (gap >= 7) return last.followers - snaps[i].followers;
+  }
+  return null;
 }
 
 /* ==================================================
@@ -178,21 +230,19 @@ export function useBiliStats(): BiliStats {
       isLive = true;
     }
 
-    const rate1 = isLive ? latest.followers - prev.followers : latest.rate1 ?? null;
-    const rate7 = latest.rate7 ?? null;
-
+    // 每日增长只基于真实快照计算;总量展示时给播放/获赞/稿件补静态值兜底
     return {
-      latest,
+      latest: applyStaticFallback(latest),
       prev,
       updated,
       live: isLive,
-      rate1,
-      rate7,
+      rate1: dailyDelta(snapshots, 'followers'),
+      rate7: weekDelta(snapshots),
       daily: {
-        followers: latest.followers - prev.followers,
-        views: latest.views - prev.views,
-        likes: latest.likes - prev.likes,
-        videos: latest.videos - prev.videos,
+        followers: dailyDelta(snapshots, 'followers'),
+        views: dailyDelta(snapshots, 'views'),
+        likes: dailyDelta(snapshots, 'likes'),
+        videos: dailyDelta(snapshots, 'videos'),
       },
       snapshots,
     };
