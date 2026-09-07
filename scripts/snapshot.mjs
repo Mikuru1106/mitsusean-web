@@ -184,6 +184,17 @@ async function main() {
     rate1,
     rate7,
   };
+
+  // 新投稿自动检测:对比历史最近一次稿件数,若增加则提示补充 BV 号。
+  // (B 站对投稿列表/动态接口风控极严,无法自动拿到新视频 BV,故只做数量检测+人工补号)
+  const prevVideos = snaps.length ? (snaps[snaps.length - 1].videos ?? null) : null;
+  const curVideos = entry.videos;
+  if (curVideos != null && prevVideos != null && curVideos > prevVideos) {
+    const inc = curVideos - prevVideos;
+    console.warn(`📢 检测到新投稿: 稿件数 ${prevVideos} → ${curVideos} (+${inc})`);
+    console.warn('   请把新视频 BV 号补充到 src/data/videos.ts 的 featuredVideos,前端会自动实时按播放量排序展示。');
+  }
+
   if (existingIndex >= 0) {
     snaps[existingIndex] = entry; // 当天已有则更新
   } else {

@@ -10,6 +10,7 @@ import {
   recentSnapshots,
   type BiliStats,
 } from '../hooks/useBiliStats';
+import { useBiliVideos } from '../hooks/useBiliVideos';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,7 +25,7 @@ function StatCard({
   daily,
   week,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   sub: string;
   value: number;
@@ -38,7 +39,7 @@ function StatCard({
   return (
     <div className="obs-card group">
       <div className="flex items-center justify-between">
-        <span className="text-lg">{icon}</span>
+        <span className="flex h-10 items-center text-lg leading-none">{icon}</span>
         <span className="obs-eyebrow !tracking-[0.25em]">{sub}</span>
       </div>
       <p className="obs-num mt-3 text-2xl md:text-[1.7rem] text-[#ffe7ef] leading-none">
@@ -319,14 +320,31 @@ function Heatmap({ stats }: { stats: BiliStats }) {
 }
 
 /* ==================================================
-   Recent clips performance — animated bars
+   Top videos — 播放最高的视频(真实数据)
    ================================================== */
+interface TopItem {
+  id: string;
+  title: string;
+  plays: number;
+  likes: number;
+  coins: number;
+}
+
 function ClipBars() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const top = useMemo(() => [...songs].sort((a, b) => b.plays - a.plays).slice(0, 5), []);
-  const maxPlays = Math.max(...top.map((s) => s.plays));
-  const maxLikes = Math.max(...top.map((s) => s.likes));
-  const maxCoins = Math.max(...top.map((s) => s.coins));
+  const liveVideos = useBiliVideos();
+
+  // 有真实视频时用真实数据;名单为空或接口失败时回退到静态演示数据,保证板块不空白
+  const top = useMemo<TopItem[]>(() => {
+    const src: TopItem[] = liveVideos.length
+      ? liveVideos.map((v) => ({ id: v.bvid, title: v.title, plays: v.plays, likes: v.likes, coins: v.coins }))
+      : songs.map((s) => ({ id: s.id, title: s.title, plays: s.plays, likes: s.likes, coins: s.coins }));
+    return [...src].sort((a, b) => b.plays - a.plays).slice(0, 5);
+  }, [liveVideos]);
+
+  const maxPlays = Math.max(1, ...top.map((s) => s.plays));
+  const maxLikes = Math.max(1, ...top.map((s) => s.likes));
+  const maxCoins = Math.max(1, ...top.map((s) => s.coins));
 
   useGSAP(
     () => {
@@ -356,8 +374,8 @@ function ClipBars() {
     <div ref={containerRef} className="obs-card">
       <div className="flex items-center justify-between">
         <div>
-          <p className="obs-eyebrow">WAVES · 近期切片表现</p>
-          <p className="mt-1 text-xs text-white/45">播放最多的五条切片。</p>
+          <p className="obs-eyebrow">TOP VIDEOS · 播放最高的视频</p>
+          <p className="mt-1 text-xs text-white/45">播放最高的五条视频。</p>
         </div>
         <div className="flex gap-3">
           {metrics.map((m) => (
@@ -433,10 +451,10 @@ export default function Observatory() {
 
           {/* Stat cards */}
           <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <StatCard icon="💧" label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} week={stats.rate7} />
+            <StatCard icon={<img src="/images/fans-icon.png" alt="粉丝数" className="inline-block size-8 object-contain" />} label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} week={stats.rate7} />
             <StatCard icon="▶" label="总播放量" sub="VIEWS" value={stats.latest.views} daily={stats.daily.views} />
             <StatCard icon="❤" label="总获赞" sub="LIKES" value={stats.latest.likes} daily={stats.daily.likes} />
-            <StatCard icon="📼" label="稿件数" sub="WORKS" value={stats.latest.videos} daily={stats.daily.videos} />
+            <StatCard icon="🎬" label="稿件数" sub="WORKS" value={stats.latest.videos} daily={stats.daily.videos} />
           </div>
 
           {/* Charts */}
