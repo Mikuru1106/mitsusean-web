@@ -8,9 +8,32 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const ALLOWED_PATHS = new Set(['x/relation/stat', 'x/web-interface/view']);
 
-function jsonError(message: string, status: number): Response {
-  return Response.json({ code: -1, message }, { status });
+/**
+ * B站会拦截数据中心 IP 的匿名请求(-412 request was banned),
+ * 需要带上浏览器端才会有的 buvid3 标识;缺失时用随机 UUID 生成一份。
+ */
+function buvid3(): string {
+  const hex = () => Math.floor(Math.random() * 16).toString(16);
+  const block = (n: number) =>
+    Array.from({ length: n }, hex).join('').toUpperCase();
+  return `${block(8)}-${block(4)}-${block(4)}-${block(4)}-${block(12)}infoc`;
 }
+
+function biliHeaders(env: { BILI_COOKIE?: string }): Headers {
+  const headers = new Headers({
+    'User-Agent': UA,
+    Referer: 'https://space.bilibili.com/',
+    Origin: 'https://space.bilibili.com',
+    Accept: 'application/json, text/plain, */*',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
+  });
+  // 登录态 Cookie 优先;未配置时至少提供 buvid3 以避免 -412
+  headers.set('Cookie', env.BILI_COOKIE || `buvid3=${buvid3()}`);
+  return headers;
+}
+
+const jsonError = (message: string, status: number): Response =>
+  Response.json({ code: -1, message }, { status });
 
 export async function onRequest(context: PagesContext): Promise<Response> {
   if (context.request.method !== 'GET' && context.request.method !== 'HEAD') {
@@ -25,26 +48,19 @@ export async function onRequest(context: PagesContext): Promise<Response> {
   const upstream = new URL(`https://api.bilibili.com/${path}`);
   upstream.search = incoming.search;
 
-  const headers = new Headers({
-    'User-Agent': UA,
-    Referer: 'https://space.bilibili.com/',
-    Accept: 'application/json',
-  });
-  if (context.env.BILI_COOKIE) headers.set('Cookie', context.env.BILI_COOKIE);
-
   try {
     const response = await fetch(upstream, {
       method: context.request.method,
-      headers,
+      headers: biliHeaders(context.env),
       signal: AbortSignal.timeout(10_000),
     });
-    const responseHeaders = new Headers({
-      'content-type': response.headers.get('content-type') ?? 'application/json; charset=utf-8',
-      'cache-control': path === 'x/relation/stat' ? 'public, max-age=60' : 'public, max-age=300',
-    });
-    return new Response(context.request.method === 'HEAD' ? null : response.body, {
+    const body = context.request.method === 'HEAD' ? null : response.body;
+    return new Response(body, {
       status: response.status,
-      headers: responseHeaders,
+      headers: {
+        'content-type': response.headers.get('content-type') ?? 'application/json; charset=utf-8',
+        'cache-control': path === 'x/relation/stat' ? 'public, max-age=60' : 'public, max-age=300',
+      },
     });
   } catch {
     return jsonError('B站接口暂时不可用', 502);

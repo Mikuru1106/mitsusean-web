@@ -5,7 +5,28 @@ type PagesContext = {
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
-const BILI_HEADERS = { 'User-Agent': UA, Referer: 'https://www.bilibili.com/' };
+
+/**
+ * B站会拦截数据中心 IP 的匿名请求(-412 request was banned),
+ * 需要带上浏览器端才会有的 buvid3 标识;缺失时用随机 UUID 生成一份。
+ */
+function buvid3(): string {
+  const hex = () => Math.floor(Math.random() * 16).toString(16);
+  const block = (n: number) =>
+    Array.from({ length: n }, hex).join('').toUpperCase();
+  return `${block(8)}-${block(4)}-${block(4)}-${block(4)}-${block(12)}infoc`;
+}
+
+function biliHeaders(env: { BILI_COOKIE?: string }): Headers {
+  const headers = new Headers({
+    'User-Agent': UA,
+    Referer: 'https://www.bilibili.com/',
+    Origin: 'https://www.bilibili.com',
+    Accept: '*/*',
+  });
+  headers.set('Cookie', env.BILI_COOKIE || `buvid3=${buvid3()}`);
+  return headers;
+}
 
 const jsonError = (message: string, status: number): Response =>
   Response.json({ code: -1, message }, { status });
@@ -21,8 +42,7 @@ export async function onRequest(context: PagesContext): Promise<Response> {
     return jsonError('无效的 bvid', 400);
   }
 
-  const headers = new Headers(BILI_HEADERS);
-  if (context.env.BILI_COOKIE) headers.set('Cookie', context.env.BILI_COOKIE);
+  const headers = biliHeaders(context.env);
 
   try {
     // 1) bvid → cid
@@ -45,7 +65,7 @@ export async function onRequest(context: PagesContext): Promise<Response> {
     if (!src) return jsonError('未找到音频流', 404);
 
     // 3) 转发音频流(透传 Range 以支持进度条/续播)
-    const upstreamHeaders = new Headers(BILI_HEADERS);
+    const upstreamHeaders = biliHeaders(context.env);
     const range = request.headers.get('range');
     if (range) upstreamHeaders.set('Range', range);
     const upstream = await fetch(src, { headers: upstreamHeaders, signal: AbortSignal.timeout(30_000) });
