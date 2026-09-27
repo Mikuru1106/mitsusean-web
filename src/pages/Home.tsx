@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaPlay, FaPause } from 'react-icons/fa';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import AnimatedTitle from '../components/AnimatedTitle';
+import PixelScene from '../components/PixelScene';
+import '../pixel-scene.css';
 import SocialLinks from '../components/SocialLinks';
 import SongsGallery from '../components/SongsGallery';
 import Observatory from '../components/Observatory';
-import Milestones from '../components/Milestones';
+import Lottery from '../components/Lottery';
 import { profile, tracks } from '../data/content';
 import { formatNum, useBiliStats } from '../hooks/useBiliStats';
 import { useLrc, activeLrcIndex } from '../hooks/useLrc';
 
-gsap.registerPlugin(ScrollTrigger);
 
 /* ==================================================
    音乐播放核心 hook — Hero(唱片/可视化) 与 音乐卡片 共用
@@ -129,6 +127,13 @@ function useMusicPlayer() {
       released = true;
       window.removeEventListener('pointerdown', start);
       window.removeEventListener('keydown', start);
+      // 路由切换时停止旧实例，避免返回首页后与新播放器叠加播放
+      audioRef.current?.pause();
+      audioRef.current = null;
+      if (ctxRef.current && ctxRef.current.state !== 'closed') void ctxRef.current.close();
+      ctxRef.current = null;
+      srcNodeRef.current = null;
+      analyserRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -380,7 +385,7 @@ function Hero() {
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 pb-10 pt-32 md:grid-cols-[1.05fr_0.95fr] md:gap-28 md:px-10 md:pt-36 lg:gap-36">
         {/* 左侧文字区 */}
         <div className="text-center md:text-left">
-          <span className="yaron-tag">♫ 水聖安的粉丝观测站 ♡</span>
+          <span className="yaron-tag">♫ 水聖安的观测站 ♡</span>
 
           <h1 className="mt-6 text-[2.7rem] font-black leading-[1.08] text-[#241322] md:text-5xl">
             Hi everyone, I'm
@@ -465,102 +470,20 @@ function Hero() {
 }
 
 /* ==================================================
-   ABOUT — Screen reveal animation
+   ABOUT — 可互动像素场景
    ================================================== */
 function About() {
-  useGSAP(() => {
-    const mm = gsap.matchMedia();
-
-    mm.add('(min-width: 768px)', () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#taoyao-screen-reveal',
-          start: 'center center',
-          end: '+=900 center',
-          scrub: 0.5,
-          pin: true,
-          pinSpacing: true,
-        },
-      });
-      tl.to('.taoyao-screen-window', {
-        width: '100vw',
-        height: '100vh',
-        borderRadius: 0,
-        clipPath: 'inset(0 round 0px)',
-        boxShadow: '0 0 0 rgba(0,0,0,0)',
-      }).to('.taoyao-postcard-detail', { autoAlpha: 0, y: -18 }, 0)
-        .to('.taoyao-screen-image', { scale: 1 }, 0);
-    });
-
-    mm.add('(max-width: 767px)', () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#taoyao-screen-reveal',
-          start: 'top 16%',
-          end: '+=520 top',
-          scrub: 0.45,
-          pin: true,
-          pinSpacing: true,
-        },
-      });
-      tl.to('.taoyao-screen-window', {
-        width: '100vw',
-        height: '100dvh',
-        borderRadius: 0,
-        clipPath: 'inset(0 round 0px)',
-        boxShadow: '0 0 0 rgba(0,0,0,0)',
-      }).to('.taoyao-postcard-detail', { autoAlpha: 0, y: -12 }, 0)
-        .to('.taoyao-screen-image', { scale: 1.04 }, 0);
-    });
-
-    return () => mm.revert();
-  });
-
+  const dayNumber = Math.floor((Date.now() + 8 * 60 * 60 * 1000 - Date.UTC(2026, 0, 1)) / 86400000) + 1;
   return (
-    <section id="about" className="min-h-screen w-screen bg-[#fff8f1]">
-      <div className="relative mb-8 mt-36 flex flex-col items-center gap-5 px-5">
-        <p className="font-general text-sm uppercase tracking-[0.35em] text-[#b76e79] md:text-[10px]">
-          Welcome to {profile.nameJP}'s Fan Site
+    <section id="about" className="min-h-screen w-screen bg-[#fff8f1] px-4 pb-24 pt-32 md:px-8">
+      <div className="mx-auto mb-8 flex max-w-6xl flex-col items-center gap-4 text-center">
+        <p className="font-general text-[10px] uppercase tracking-[0.35em] text-[#b76e79]">
+          WELCOME TO Mitsusean ROOM / DAY {String(dayNumber).padStart(2, '0')}
         </p>
-
-        <AnimatedTitle
-          title="FEEL FRE<b>E</b> TO KEEP <br /> SCROLLING D<b>O</b>WN"
-          containerClass="mt-5 !text-black text-center"
-        />
-
-        <div className="about-subtext">
-          <p>这里收录了{profile.name}的歌曲切片、数据档案与社交链接，希望能让更多人认识这位闪闪发光的歌者。</p>
-        </div>
+        <AnimatedTitle title="STAY <b>AWHILE</b> WITH <b>XIAOAN</b> ♡" containerClass="mt-2 !text-black text-center" />
+        <div className="about-subtext"><p>拖动小狗到小安身边吧。</p></div>
       </div>
-
-      {/* Screen reveal */}
-      <div className="taoyao-screen-reveal w-screen" id="taoyao-screen-reveal">
-        <div className="taoyao-screen-window">
-          <div className="taoyao-postcard-detail absolute left-5 right-5 top-5 z-30 flex items-center justify-between text-blue-50">
-            <span className="rounded-full border border-white/35 bg-white/20 px-4 py-2 font-general text-[10px] uppercase tracking-[0.35em] backdrop-blur-md">
-              Welcome to {profile.nameJP}
-            </span>
-            <span className="font-general text-[10px] uppercase tracking-[0.35em] text-white/75">
-              No. 2026
-            </span>
-          </div>
-
-          {/* Background image (gradient placeholder) */}
-          <div className="taoyao-screen-image absolute left-0 top-0 size-full scale-100 md:scale-[1.08] object-cover
-            bg-gradient-to-br from-[#b76e79] via-[#ff8fab] to-[#dde8ff]" />
-
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#160d14]/60 via-transparent to-white/10" />
-          <div className="taoyao-postcard-detail pointer-events-none absolute inset-5 z-30 border border-white/30" />
-          <div className="taoyao-postcard-detail pointer-events-none absolute bottom-8 left-6 right-6 text-blue-50 md:left-10 md:right-auto md:max-w-xl">
-            <p className="font-general text-xs uppercase tracking-[0.35em] text-pink-100/80">
-              Scroll to immerse
-            </p>
-            <p className="mt-3 font-circular-web text-lg leading-relaxed md:text-2xl">
-              她的声音像清泉流过心间，既有水的温柔，也有圣洁的力量。
-            </p>
-          </div>
-        </div>
-      </div>
+      <PixelScene />
     </section>
   );
 }
@@ -575,7 +498,7 @@ export default function Home() {
       <About />
       <SongsGallery />
       <Observatory />
-      <Milestones />
+      <Lottery />
     </>
   );
 }

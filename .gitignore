@@ -26,3 +26,9 @@ dist-ssr
 # Local assistant configuration
 .claude/settings.local.json
 .zcode/
+
+# Cloudflare local state
+.wrangler/
+
+# Local reference snapshots
+.ref_*

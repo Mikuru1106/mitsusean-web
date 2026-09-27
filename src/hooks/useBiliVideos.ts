@@ -4,13 +4,29 @@ import { featuredVideos } from '../data/videos';
 export interface BiliVideo {
   bvid: string;
   title: string;
+  thumbnail: string;
   plays: number;
   likes: number;
   coins: number;
+  publishedAt?: string | null;
+  url?: string;
 }
 
-/** 逐个 bvid 调用公开 view 接口,实时拉取真实播放/点赞/投币。
- *  经 /api/bili 代理(dev)或直连 api.bilibili.com;失败或 B 站返回非 0 时丢弃该条。 */
+interface VideoSnapshot {
+  updatedAt?: string;
+  total?: number;
+  videos?: BiliVideo[];
+}
+
+export interface BiliVideoPool {
+  videos: BiliVideo[];
+  /** 全量快照的采集时间;回退到精选详情时为 null */
+  updatedAt: string | null;
+  source: 'snapshot' | 'featured' | 'empty';
+}
+
+let poolPromise: Promise<BiliVideoPool> | null = null;
+
 async function fetchVideo(bvid: string): Promise<BiliVideo | null> {
   try {
     const res = await fetch(`/api/bili/x/web-interface/view?bvid=${bvid}`);
@@ -21,30 +37,60 @@ async function fetchVideo(bvid: string): Promise<BiliVideo | null> {
     return {
       bvid,
       title: data.title ?? bvid,
+      thumbnail: typeof data.pic === 'string' ? data.pic : '',
       plays: data.stat.view ?? 0,
       likes: data.stat.like ?? 0,
       coins: data.stat.coin ?? 0,
+      url: `https://www.bilibili.com/video/${bvid}`,
     };
   } catch {
     return null;
   }
 }
 
-/** 拉取代表视频的真实数据;名单为空或全失败时返回空数组。 */
-export function useBiliVideos(bvids: string[] = featuredVideos): BiliVideo[] {
-  const [videos, setVideos] = useState<BiliVideo[]>([]);
+async function loadSnapshot(): Promise<BiliVideoPool> {
+  try {
+    const res = await fetch('/data/videos.json', { cache: 'no-cache' });
+    if (!res.ok) return { videos: [], updatedAt: null, source: 'empty' };
+    const json = (await res.json()) as VideoSnapshot;
+    const videos = Array.isArray(json.videos) ? json.videos.filter((video) => video?.bvid) : [];
+    if (videos.length === 0) return { videos: [], updatedAt: null, source: 'empty' };
+    return { videos, updatedAt: typeof json.updatedAt === 'string' ? json.updatedAt : null, source: 'snapshot' };
+  } catch {
+    return { videos: [], updatedAt: null, source: 'empty' };
+  }
+}
+
+function loadVideoPool(): Promise<BiliVideoPool> {
+  if (!poolPromise) {
+    poolPromise = loadSnapshot().then(async (snapshot) => {
+      if (snapshot.videos.length > 0) return snapshot;
+      const fallback = await Promise.all(featuredVideos.map((bvid) => fetchVideo(bvid)));
+      const videos = fallback.filter((video): video is BiliVideo => video !== null);
+      return { videos, updatedAt: null, source: videos.length ? 'featured' : 'empty' } as BiliVideoPool;
+    });
+  }
+  return poolPromise;
+}
+
+/** 优先读取定时全量快照;快照不可用时回退到精选 BV 详情。 */
+export function useBiliVideoPool(): BiliVideoPool {
+  const [pool, setPool] = useState<BiliVideoPool>({ videos: [], updatedAt: null, source: 'empty' });
 
   useEffect(() => {
-    if (bvids.length === 0) return;
     let cancelled = false;
-    Promise.all(bvids.map((b) => fetchVideo(b))).then((results) => {
-      if (cancelled) return;
-      setVideos(results.filter((v): v is BiliVideo => v !== null));
+    void loadVideoPool().then((loaded) => {
+      if (!cancelled) setPool(loaded);
     });
     return () => {
       cancelled = true;
     };
-  }, [bvids]);
+  }, []);
 
-  return videos;
+  return pool;
+}
+
+/** 只要视频列表的简化入口。 */
+export function useBiliVideos(): BiliVideo[] {
+  return useBiliVideoPool().videos;
 }

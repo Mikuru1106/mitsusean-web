@@ -16,7 +16,7 @@ const COVER_GRADIENTS = [
 /* ==================================================
    Song card — cover + meta, click to open player
    ================================================== */
-function SongCard({ song, index, onOpen }: { song: Song; index: number; onOpen: () => void }) {
+function SongCard({ song, index, tagLabel, onOpen }: { song: Song; index: number; tagLabel: string; onOpen: () => void }) {
   return (
     <article
       onClick={onOpen}
@@ -37,7 +37,7 @@ function SongCard({ song, index, onOpen }: { song: Song; index: number; onOpen: 
 
         {/* tags */}
         <span className="absolute left-3 top-3 z-20 rounded-full border border-white/25 bg-black/35 px-3 py-1 font-general text-[9px] uppercase tracking-[0.3em] text-pink-100/90 backdrop-blur-md">
-          切片 {String(index + 1).padStart(2, '0')}
+          {tagLabel}
         </span>
         <span className="absolute right-3 top-3 z-20 rounded-full bg-white/85 px-3 py-1 text-[10px] font-bold text-[#241322] backdrop-blur-md">
           {song.category}
@@ -58,7 +58,7 @@ function SongCard({ song, index, onOpen }: { song: Song; index: number; onOpen: 
       {/* Body */}
       <div className="p-5">
         <h3 className="text-lg font-black leading-snug text-[#241322]">{song.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-[#8b6f63]">{song.desc}</p>
+        <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-[#8b6f63]">{song.desc}</p>
         <p className="mt-3 flex items-center gap-3 text-[11px] font-bold text-[#b76e79]">
           <span>▶ {formatNum(song.plays)}</span>
           <span>❤ {formatNum(song.likes)}</span>
@@ -119,7 +119,7 @@ function PlayerModal({ song, onClose }: { song: Song; onClose: () => void }) {
               {song.category} · {song.date} · ▶ {formatNum(song.plays)}
             </p>
             <h3 className="mt-1.5 text-xl font-black text-[#241322]">{song.title}</h3>
-            <p className="mt-1 text-sm text-[#8b6f63]">{song.desc}</p>
+            <p className="mt-1 whitespace-pre-line break-words text-sm text-[#8b6f63]">{song.desc}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-2">
             <a
@@ -151,13 +151,24 @@ export default function SongsGallery() {
   const [category, setCategory] = useState<(typeof songCategories)[number]>('全部');
   const [sort, setSort] = useState<'latest' | 'hot'>('latest');
   const [active, setActive] = useState<Song | null>(null);
+  const [visibleCount, setVisibleCount] = useState(6);
 
   const list = useMemo(() => {
     const filtered = category === '全部' ? songs : songs.filter((s) => s.category === category);
     const sorted = [...filtered];
     if (sort === 'latest') sorted.sort((a, b) => b.date.localeCompare(a.date));
     else sorted.sort((a, b) => b.plays - a.plays);
-    return sorted;
+    // 按分类各自编号:翻唱 01、歌回切片显示为 切片 01
+    const counters: Record<string, number> = {};
+    return sorted.map((song) => {
+      counters[song.category] = (counters[song.category] ?? 0) + 1;
+      const prefix = song.category === '歌回切片' ? '切片' : song.category;
+      return { song, tagLabel: `${prefix}${String(counters[song.category]).padStart(2, '0')}` };
+    });
+  }, [category, sort]);
+
+  useEffect(() => {
+    setVisibleCount(6);
   }, [category, sort]);
 
   return (
@@ -170,7 +181,7 @@ export default function SongsGallery() {
               A collection of song covers
             </p>
             <p className="mt-5 text-lg leading-relaxed text-[#5f4b52]">
-              {profile.name}的翻唱作品合集，每一首都是精心演绎的音乐礼物。
+              汇集小安的翻唱，把喜欢的歌声一首首保存下来。
             </p>
           </div>
 
@@ -239,10 +250,25 @@ export default function SongsGallery() {
 
         {/* Cards grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((song, i) => (
-            <SongCard key={song.id} song={song} index={i} onOpen={() => setActive(song)} />
+          {list.slice(0, visibleCount).map(({ song, tagLabel }, i) => (
+            <SongCard key={song.id} song={song} index={i} tagLabel={tagLabel} onOpen={() => setActive(song)} />
           ))}
         </div>
+
+        {visibleCount < list.length && (
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + 6)}
+              className="rounded-full border-2 border-[#b76e79] bg-white/80 px-8 py-3 text-sm font-black tracking-[0.2em] text-[#b76e79] transition-all duration-300 hover:bg-[#ff8fab] hover:text-[#241322] hover:shadow-[0_10px_28px_rgba(255,143,171,0.35)]"
+            >
+              显示更多 ↓
+            </button>
+            <p className="font-general text-[10px] uppercase tracking-[0.3em] text-[#b76e79]/70">
+              {Math.min(visibleCount, list.length)} / {list.length}
+            </p>
+          </div>
+        )}
       </div>
 
       {active && <PlayerModal song={active} onClose={() => setActive(null)} />}

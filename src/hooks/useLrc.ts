@@ -16,7 +16,11 @@ export function parseLrc(raw: string): LrcLine[] {
     if (!m) continue;
     const time = Number(m[1]) * 60 + Number(m[2]);
     const text = m[3].trim();
-    if (text) lines.push({ time, text });
+    if (!text) continue;
+    // 同一时间戳的多行通常是原文与译文,合并成一句展示
+    const prev = lines[lines.length - 1];
+    if (prev && Math.abs(prev.time - time) < 0.001) prev.text += ` / ${text}`;
+    else lines.push({ time, text });
   }
   return lines.sort((a, b) => a.time - b.time);
 }
@@ -41,8 +45,9 @@ const readCache = (key: string): string | null => {
 }
 
 /**
- * 从 LRCLIB(开放歌词库,与音乐软件同类方案)获取带时间轴歌词。
- * 返回 null = 暂无歌词(组件回退显示单句片段)。
+ * 获取带时间轴歌词:优先读取曲目自带的站内 LRC 文件,
+ * 否则从 LRCLIB(开放歌词库)获取。
+ * 返回 null = 暂无歌词。
  */
 export function useLrc(track: Track): LrcLine[] | null {
   const [lines, setLines] = useState<LrcLine[] | null>(null);
@@ -50,6 +55,22 @@ export function useLrc(track: Track): LrcLine[] | null {
   useEffect(() => {
     let cancelled = false;
     setLines(null);
+
+    // 站内 LRC 优先:文件随站点部署,不受歌词库收录情况影响
+    if (track.lyrics) {
+      fetch(track.lyrics)
+        .then((res) => (res.ok ? res.text() : ''))
+        .then((raw) => {
+          if (cancelled) return;
+          setLines(raw ? parseLrc(raw) : null);
+        })
+        .catch(() => {
+          if (!cancelled) setLines(null);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     const cached = readCache(track.title);
     if (cached !== null) {
@@ -65,8 +86,14 @@ export function useLrc(track: Track): LrcLine[] | null {
         const j = await get.json();
         if (j?.syncedLyrics) return j.syncedLyrics as string;
       }
-      const search = await fetch(`https://lrclib.net/api/search?${q}`).catch(() => null);
-      if (search?.ok) {
+      // LRCLIB 的搜索接口使用 q 参数；artist_name/track_name 仅适用于 /get
+      const searchQueries = [
+        `${track.title} ${track.artist}`,
+        track.title,
+      ];
+      for (const searchQuery of searchQueries) {
+        const search = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`).catch(() => null);
+        if (!search?.ok) continue;
         const list = await search.json();
         const hit = (Array.isArray(list) ? list : []).find((r: { syncedLyrics?: string }) => r.syncedLyrics);
         if (hit) return hit.syncedLyrics as string;

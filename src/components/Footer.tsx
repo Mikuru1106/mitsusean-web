@@ -18,7 +18,7 @@ export default function Footer() {
     <footer className="footer-shell">
       <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row max-w-7xl">
         <p className="text-center text-sm font-light md:text-left text-[#5f4b52]">
-          @{profile.nameJP}
+          @水聖安
         </p>
 
         <div className="flex justify-center gap-4 md:justify-start">
@@ -39,7 +39,7 @@ export default function Footer() {
         </div>
 
         <p className="text-center text-sm font-light md:text-right text-[#5f4b52]">
-          非官方应援站 · 仅作学习使用
+          做得很粗糙，后续会优化页面
           <span className="block text-[10px] tracking-[0.2em] text-[#b76e79]/70 mt-0.5">
             数据{stats.live ? '实时获取' : '快照'}更新于 {updated}
           </span>

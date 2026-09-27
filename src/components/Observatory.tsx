@@ -470,7 +470,7 @@ export default function Observatory() {
 
           {/* Footnote */}
           <p className="mt-6 text-center text-[10px] tracking-[0.2em] text-white/30">
-            数据来自 B站公开接口的每日快照，仅供参考 · 每一滴水都被记录
+            数据来自 B站公开接口的每日快照，仅供参考
           </p>
         </div>
       </div>

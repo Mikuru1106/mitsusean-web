@@ -1,0 +1,554 @@
+/* Verbatim reference arcade machine styles from taozhiyy. */
+
+.source-arcade-shell {
+  position: relative;
+  isolation: isolate;
+  margin: 0 auto;
+  min-height: 38rem;
+  max-width: 72rem;
+  overflow: hidden;
+  border: 1px solid rgba(222, 183, 145, 0.72);
+  border-radius: 2.4rem;
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255, 209, 220, 0.72), transparent 28rem),
+    radial-gradient(circle at 88% 24%, rgba(255, 238, 188, 0.76), transparent 24rem),
+    linear-gradient(135deg, #fffaf0 0%, #fff5ec 48%, #eef8ff 100%);
+  padding: 1.5rem;
+  box-shadow:
+    0 28px 90px rgba(183, 110, 121, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.source-arcade-bg-grid {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(211, 154, 120, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(211, 154, 120, 0.12) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.62), transparent 82%);
+}
+
+.source-arcade-head {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 42rem;
+  padding: 0.25rem 0.25rem 1.4rem;
+  color: #543f43;
+}
+
+.source-arcade-eyebrow {
+  width: max-content;
+  border: 1px solid rgba(183, 110, 121, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.45rem 0.8rem;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: #b76e79;
+}
+
+.source-arcade-head h2 {
+  font-family: "Zentry", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: clamp(2.5rem, 8vw, 6.2rem);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+  color: #4f363d;
+}
+
+.source-arcade-head p:not(.source-arcade-eyebrow) {
+  max-width: 34rem;
+  font-family: "Circular Web", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: rgba(79, 54, 61, 0.72);
+}
+
+.source-arcade-machine {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 2rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 247, 232, 0.78)),
+    linear-gradient(135deg, #ffe6ef 0%, #fff7de 52%, #eaf7ff 100%);
+  padding: 1rem;
+  box-shadow:
+    0 24px 70px rgba(140, 91, 75, 0.16),
+    inset 0 -10px 24px rgba(255, 212, 181, 0.34);
+}
+
+.source-arcade-marquee {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(183, 110, 121, 0.16);
+  background: #fffaf2;
+  padding: 0.45rem;
+  box-shadow: inset 0 0 0 0.35rem rgba(255, 221, 229, 0.36);
+}
+
+.source-arcade-marquee span {
+  display: grid;
+  min-height: 2.5rem;
+  place-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 28%, #fff 0 0.28rem, transparent 0.3rem),
+    linear-gradient(180deg, #ffe9b8, #ffd3df);
+  color: #6f4450;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+.source-arcade-screen {
+  overflow: hidden;
+  border: 0.55rem solid #fff8ea;
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(90deg, transparent 0 31%, rgba(255, 255, 255, 0.68) 31% 32%, transparent 32% 64%, rgba(255, 255, 255, 0.68) 64% 65%, transparent 65%),
+    linear-gradient(135deg, rgba(82, 54, 62, 0.88), rgba(103, 72, 79, 0.84));
+  padding: 0.75rem;
+  box-shadow:
+    inset 0 12px 30px rgba(32, 20, 24, 0.28),
+    0 16px 36px rgba(129, 87, 75, 0.16);
+}
+
+.source-reels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.source-reels.is-spinning .source-reel-card {
+  animation: source-reel-spin 0.18s linear infinite;
+}
+
+.source-reel-card {
+  display: grid;
+  min-height: 8.5rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 236, 194, 0.78), transparent 5rem),
+    linear-gradient(180deg, #fffdf6, #ffe3ed);
+  color: #593a42;
+  text-align: center;
+  box-shadow: inset 0 -10px 22px rgba(255, 194, 210, 0.32);
+}
+
+.source-reel-card span {
+  display: grid;
+  height: 3.4rem;
+  width: 3.4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #fff6d7, #ffc6d8);
+  color: #8c4c58;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-weight: 900;
+  box-shadow: inset 0 6px 10px rgba(255, 255, 255, 0.62);
+}
+
+.source-reel-card strong {
+  max-width: 7rem;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.source-prize-panel {
+  position: relative;
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid rgba(222, 183, 145, 0.72);
+  border-radius: 1.35rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 248, 235, 0.9)),
+    repeating-linear-gradient(0deg, transparent 0 1.75rem, rgba(183, 110, 121, 0.08) 1.75rem 1.8rem);
+  padding: 1.15rem;
+  color: #523a40;
+  box-shadow: 0 16px 34px rgba(139, 91, 75, 0.12);
+}
+
+.source-prize-label {
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #b76e79;
+}
+
+.source-prize-panel h3 {
+  font-family: "Circular Web", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: clamp(1.45rem, 4vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.source-prize-panel p:not(.source-prize-label) {
+  max-width: 38rem;
+  color: rgba(82, 58, 64, 0.72);
+  line-height: 1.7;
+}
+
+.source-wallpaper-hint {
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  background: rgba(255, 216, 226, 0.62);
+  padding: 0.42rem 0.75rem;
+  color: #8d5360;
+  font-size: 0.78rem;
+}
+
+.source-prize-action,
+.source-arcade-draw-btn {
+  width: max-content;
+  border: 1px solid rgba(183, 110, 121, 0.24);
+  border-radius: 999px;
+  background: #fffaf2;
+  padding: 0.75rem 1rem;
+  color: #7b4b53;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: transform 240ms ease, box-shadow 240ms ease, background 240ms ease;
+}
+
+.source-prize-action:hover,
+.source-arcade-draw-btn:hover {
+  transform: translateY(-2px);
+  background: #fff3df;
+  box-shadow: 0 12px 28px rgba(183, 110, 121, 0.16);
+}
+
+.source-prize-action:disabled,
+.source-arcade-draw-btn:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.source-arcade-lever {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(222, 183, 145, 0.62);
+  background: rgba(255, 250, 242, 0.72);
+  padding: 1rem;
+}
+
+.source-arcade-lever button {
+  position: relative;
+  height: 7.2rem;
+  width: 5.2rem;
+  cursor: grab;
+  border: 0;
+  background: transparent;
+}
+
+.source-arcade-lever button:active {
+  cursor: grabbing;
+}
+
+.source-lever-stick {
+  position: absolute;
+  bottom: 1.15rem;
+  left: 50%;
+  height: 4.8rem;
+  width: 0.7rem;
+  transform: translateX(-50%) rotate(0deg);
+  transform-origin: bottom center;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d99b73, #fff0c5 48%, #b76e79);
+  box-shadow: 0 9px 20px rgba(129, 87, 75, 0.18);
+  transition: transform 360ms cubic-bezier(0.2, 0.85, 0.25, 1.25);
+}
+
+.source-lever-ball {
+  position: absolute;
+  left: 50%;
+  top: 0.25rem;
+  height: 3.1rem;
+  width: 3.1rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #fff 0 0.38rem, transparent 0.4rem),
+    linear-gradient(145deg, #ffbed3, #ffd36f);
+  box-shadow:
+    inset 0 -9px 16px rgba(177, 87, 95, 0.2),
+    0 12px 28px rgba(183, 110, 121, 0.22);
+  transition: transform 360ms cubic-bezier(0.2, 0.85, 0.25, 1.25);
+}
+
+.source-arcade-lever::after {
+  content: "";
+  height: 1.1rem;
+  width: 4.2rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(140, 91, 75, 0.16), transparent);
+}
+
+.source-arcade-lever.is-pulled .source-lever-stick {
+  transform: translateX(-50%) rotate(18deg);
+}
+
+.source-arcade-lever.is-pulled .source-lever-ball {
+  transform: translate(0.9rem, 1.3rem);
+}
+
+.source-arcade-lever p {
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: #9b5b66;
+}
+
+.source-arcade-draw-btn {
+  justify-self: center;
+  background: linear-gradient(135deg, #ffe0ea, #fff1bd);
+}
+
+
+.source-machine-controls {
+  grid-area: controls;
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  border: 0.35rem solid #fff2da;
+  border-radius: 1.55rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent),
+    linear-gradient(180deg, #ffe0ca, #ffc3d6);
+  padding: 1rem 0.8rem;
+  box-shadow:
+    inset 0 -1rem 1.5rem rgba(174, 91, 99, 0.12),
+    0 1rem 1.8rem rgba(129, 87, 75, 0.13);
+}
+
+.source-machine-controls::before {
+  content: "CONTROL";
+  position: absolute;
+  left: 50%;
+  top: 0.75rem;
+  transform: translateX(-50%);
+  color: rgba(116, 71, 80, 0.56);
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.source-arcade-lever {
+  margin-top: 1.5rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.source-arcade-lever button {
+  height: 8.6rem;
+  width: 7rem;
+  cursor: grab;
+  border: 0;
+  background: transparent;
+  position: relative;
+}
+.source-arcade-lever button:active {
+  cursor: grabbing;
+}
+
+/* —— 底座：手绘碟形 + 水彩晕染 —— */
+.source-arcade-lever button::after {
+  content: "";
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  height: 2.2rem;
+  width: 5.6rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 40%, #fff8ee 0%, #ffe8d6 35%, #ecc9b0 75%, #c89a85 100%);
+  box-shadow:
+    inset 0 0.4rem 0.7rem rgba(255, 250, 240, 0.7),
+    inset 0 -0.3rem 0.5rem rgba(140, 95, 80, 0.18),
+    0 0.5rem 1.2rem rgba(140, 95, 80, 0.14);
+  filter: blur(0.3px);
+  opacity: 0.96;
+}
+
+/* —— 底座的"墨晕"小阴影点缀（手绘细节） —— */
+.source-arcade-lever button::before {
+  content: "";
+  position: absolute;
+  bottom: 0.55rem;
+  left: 50%;
+  height: 0.45rem;
+  width: 2.6rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(160, 110, 90, 0.24) 0%, transparent 65%);
+  filter: blur(2px);
+  z-index: 1;
+}
+
+/* —— 杆身：水彩笔触感 + 渐变中部高光 —— */
+.source-lever-stick {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 50%;
+  height: 4.8rem;
+  width: 0.78rem;
+  transform: translateX(-50%) rotate(0deg);
+  transform-origin: bottom center;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg,
+      rgba(255, 220, 195, 0.6) 0%,
+      #f7c8a8 18%,
+      #fff2dc 48%,
+      #f7c8a8 78%,
+      rgba(220, 165, 140, 0.55) 100%);
+  box-shadow:
+    0 0.3rem 0.6rem rgba(170, 110, 95, 0.18),
+    inset 0 0 0 0.04rem rgba(255, 235, 210, 0.55);
+  filter: blur(0.15px);
+}
+
+/* —— 球头：水彩晕染球，柔和无塑料感 —— */
+.source-lever-ball {
+  position: absolute;
+  left: 50%;
+  top: 0.3rem;
+  height: 2.8rem;
+  width: 2.8rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 252, 244, 0.85) 0%,
+      rgba(255, 252, 244, 0.4) 12%,
+      transparent 28%),
+    radial-gradient(circle at 70% 78%,
+      rgba(180, 130, 130, 0.32) 0%,
+      transparent 40%),
+    radial-gradient(circle at 48% 48%,
+      #ffd6c8 0%,
+      #f4a896 50%,
+      #d97f72 100%);
+  box-shadow:
+    inset 0 -0.18rem 0.4rem rgba(160, 80, 75, 0.32),
+    inset 0 0.15rem 0.3rem rgba(255, 240, 225, 0.42),
+    0 0.5rem 1rem rgba(170, 100, 95, 0.28),
+    0 0 0 0.05rem rgba(255, 240, 225, 0.5);
+  filter: blur(0.15px);
+}
+
+/* —— 拉动动画：柔和液体感 —— */
+.source-lever-stick,
+.source-lever-ball {
+  transition: transform 520ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.source-arcade-lever.is-pulled .source-lever-stick {
+  transform: translateX(-50%) rotate(28deg);
+}
+
+.source-arcade-lever.is-pulled .source-lever-ball {
+  /* 球需要跟着杆顶端的轨迹移动，并保持球本身和杆同步旋转。
+     杆长 4.8rem，旋转 28° 后杆顶位移：
+     - x: sin(28°) × 4.8 ≈ 2.25rem
+     - y: (1 - cos(28°)) × 4.8 ≈ 0.56rem
+     球本身也旋转 28° 视觉才正常（不歪头）。 */
+  transform: translate(calc(-50% + 2.25rem), 0.56rem) rotate(28deg);
+}
+
+.source-arcade-lever::after {
+  display: none;
+}
+
+.source-arcade-lever p {
+  margin-top: 0.5rem;
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  color: #b27d6b;
+  text-shadow: 0 1px 0 rgba(255, 248, 240, 0.7);
+}
+
+.source-arcade-draw-btn {
+  display: grid;
+  width: 5.5rem;
+  height: 5.5rem;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 28%, #fff 0 0.4rem, transparent 0.42rem),
+    linear-gradient(145deg, #ff8eb1, #ffcf65);
+  color: #fffaf0;
+  text-shadow: 0 1px 0 rgba(90, 55, 60, 0.25);
+  box-shadow:
+    0 0.9rem 0 #b76e79,
+    0 1.6rem 2.2rem rgba(129, 87, 75, 0.22);
+}
+
+.source-coin-slot {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+}
+
+.source-coin-slot span {
+  display: block;
+  height: 0.55rem;
+  width: 5rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6b4d53, #3d2930);
+  box-shadow:
+    0 0.25rem 0 rgba(255, 255, 255, 0.28),
+    inset 0 0.15rem 0 rgba(0, 0, 0, 0.22);
+}
+
+.source-coin-slot p {
+  color: rgba(116, 71, 80, 0.62);
+  font-family: "General Sans", system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.source-prize-dispenser {
+  grid-area: dispenser;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 4.3rem;
+
+}

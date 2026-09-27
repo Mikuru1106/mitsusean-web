@@ -1,11 +1,23 @@
+import { useLocation, useNavigate } from 'react-router-dom';
 import { profile, navLinks } from '../data/content';
 import { formatNum, useBiliStats } from '../hooks/useBiliStats';
 
 export default function Header() {
   const stats = useBiliStats();
 
+  const navigate = useNavigate();
+  const location = useLocation();
   const scrollTo = (hash: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!hash.startsWith('#')) {
+      e.preventDefault();
+      navigate(hash);
+      return;
+    }
     e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate(`/${hash}`);
+      return;
+    }
     const el = document.querySelector(hash);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -26,7 +38,7 @@ export default function Header() {
             className="size-9 rounded-full object-cover ring-2 ring-[#ff8fab]/50 transition-transform duration-300 group-hover:scale-105"
           />
           <span className="text-sm font-bold tracking-wide text-[#b76e79]">
-            {profile.name}'s Fan Site
+            {profile.name}'s Site
           </span>
         </a>
 

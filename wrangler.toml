@@ -1,0 +1,6 @@
+name = "mitsusean-web"
+compatibility_date = "2026-09-27"
+pages_build_output_dir = "dist"
+
+[vars]
+# BILI_COOKIE 应在 Cloudflare Pages 的 Settings > Environment variables 中配置为 Secret。
