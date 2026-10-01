@@ -287,15 +287,17 @@ export interface Track {
   artist: string;
   /** B站 MV 稿件(音频经 dev 中间件转发播放) */
   bvid: string;
+  /** 可选的静态音频文件；不存在时由播放器回退到 B站代理 */
+  audioSrc?: string;
   /** 可选的站内 LRC 文件；配置后优先于在线歌词库 */
   lyrics?: string;
 }
 
 /** 首页音乐卡片:点击切换;歌词优先读取站内 LRC,否则从 LRCLIB 获取 */
 export const tracks: Track[] = [
-  { title: 'ヒッチコック', artist: 'ヨルシカ', bvid: 'BV1CW411K7Rn' },
-  { title: '言って。', artist: 'ヨルシカ', bvid: 'BV19x41167us' },
-  { title: 'ただ君に晴れ', artist: 'ヨルシカ', bvid: 'BV1dW41137on' },
-  { title: '溶けた声で', artist: 'culicc_', bvid: 'BV1cm411U7vi', lyrics: '/lyrics/toketa-koe.lrc' },
-  { title: '好きだから。', artist: '『ユイカ』', bvid: 'BV1cL411W7Kz' },
+  { title: 'ヒッチコック', artist: 'ヨルシカ', bvid: 'BV1CW411K7Rn', audioSrc: '/audio/BV1CW411K7Rn.m4a' },
+  { title: '言って。', artist: 'ヨルシカ', bvid: 'BV19x41167us', audioSrc: '/audio/BV19x41167us.m4a' },
+  { title: 'ただ君に晴れ', artist: 'ヨルシカ', bvid: 'BV1dW41137on', audioSrc: '/audio/BV1dW41137on.m4a' },
+  { title: '溶けた声で', artist: 'culicc_', bvid: 'BV1cm411U7vi', audioSrc: '/audio/BV1cm411U7vi.m4a', lyrics: '/lyrics/toketa-koe.lrc' },
+  { title: '好きだから。', artist: '『ユイカ』', bvid: 'BV1cL411W7Kz', audioSrc: '/audio/BV1cL411W7Kz.m4a' },
 ];

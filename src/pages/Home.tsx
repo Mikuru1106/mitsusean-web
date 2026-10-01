@@ -23,7 +23,9 @@ function useMusicPlayer() {
   const [activeIdx, setActiveIdx] = useState(-1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadedBvid = useRef<string | null>(null);
+  const localSourceRef = useRef(false);
   const idxRef = useRef(0);
+  const bvidRef = useRef('');
   idxRef.current = idx;
   const track = tracks[idx];
   const lrcLines = useLrc(track);
@@ -37,6 +39,18 @@ function useMusicPlayer() {
     let audio = audioRef.current;
     if (!audio) {
       audio = new Audio();
+      audio.addEventListener('error', () => {
+        if (localSourceRef.current) {
+          localSourceRef.current = false;
+          const player = audioRef.current;
+          if (!player) return;
+          player.src = `/api/bili-audio?bvid=${bvidRef.current}`;
+          loadedBvid.current = bvidRef.current;
+          void player.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+          return;
+        }
+        setPlaying(false);
+      });
       audio.addEventListener('ended', () => {
         // 播完自动切下一首
         const next = (idxRef.current + 1) % tracks.length;
@@ -48,8 +62,12 @@ function useMusicPlayer() {
     // 每次播放前都强制应用音量,避免复用旧元素时音量未生效
     audio.volume = AUDIO_VOLUME;
     if (loadedBvid.current !== bvid) {
-      // 先同步设置音频地址并启动加载,避免等待网络 HEAD 后错过自动播放时机
-      audio.src = `/api/bili-audio?bvid=${bvid}`;
+      const selectedTrack = tracks.find((item) => item.bvid === bvid);
+      const localSource = selectedTrack?.audioSrc;
+      bvidRef.current = bvid;
+      localSourceRef.current = Boolean(localSource);
+      // 优先播放 GitHub Actions 归档的静态音频，失败后回退到 B站代理。
+      audio.src = localSource ?? `/api/bili-audio?bvid=${bvid}`;
       loadedBvid.current = bvid;
     }
     // 首次播放时接入 Web Audio 分析器(驱动头像可视化)

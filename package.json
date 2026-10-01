@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "snapshot": "node scripts/snapshot.mjs",
-    "videos-snapshot": "node scripts/videos-snapshot.mjs"
+    "videos-snapshot": "node scripts/videos-snapshot.mjs",
+    "audio-snapshot": "node scripts/audio-snapshot.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
