@@ -54,14 +54,30 @@ export async function onRequest(context: PagesContext): Promise<Response> {
       headers: biliHeaders(context.env),
       signal: AbortSignal.timeout(10_000),
     });
-    const body = context.request.method === 'HEAD' ? null : response.body;
-    return new Response(body, {
-      status: response.status,
-      headers: {
-        'content-type': response.headers.get('content-type') ?? 'application/json; charset=utf-8',
-        'cache-control': path === 'x/relation/stat' ? 'public, max-age=60' : 'public, max-age=300',
-      },
+    const contentType = response.headers.get('content-type') ?? 'application/json; charset=utf-8';
+    const body = context.request.method === 'HEAD' ? null : await response.text();
+    let status = response.status;
+    const headers = new Headers({
+      'content-type': contentType,
+      'cache-control': context.env.BILI_COOKIE ? 'private, no-store' : 'public, max-age=60',
     });
+
+    if (body && contentType.includes('application/json')) {
+      try {
+        const payload = JSON.parse(body) as { code?: number };
+        if (payload.code === -412) {
+          status = 429;
+          headers.set('retry-after', '60');
+          headers.set('cache-control', 'no-store');
+        } else if (path === 'x/web-interface/view') {
+          headers.set('cache-control', context.env.BILI_COOKIE ? 'private, no-store' : 'public, max-age=300');
+        }
+      } catch {
+        /* 保留上游非 JSON 响应 */
+      }
+    }
+
+    return new Response(body, { status, headers });
   } catch {
     return jsonError('B站接口暂时不可用', 502);
   }

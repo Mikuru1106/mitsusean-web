@@ -408,7 +408,8 @@ function Hero() {
             <div className="hero-live-badge">
               <span className="hero-live-dot" aria-hidden="true" />
               <span>
-                LIVE · 粉丝 {formatNum(stats.latest.followers)} · 实时
+                {stats.live ? 'LIVE' : 'SNAPSHOT'} · 粉丝 {formatNum(stats.latest.followers)}
+                {stats.live ? ' · 实时' : ` · 更新于 ${stats.updated.slice(5, 10).replace('-', '/')}`}
               </span>
             </div>
           </div>

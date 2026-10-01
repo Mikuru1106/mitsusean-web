@@ -61,11 +61,11 @@ export default function Header() {
           href="#observatory"
           onClick={scrollTo('#observatory')}
           className="hero-live-badge !tracking-[0.12em]"
-          title="B站实时粉丝数"
+          title={stats.live ? 'B站实时粉丝数' : '快照粉丝数'}
         >
           <span className="hero-live-dot" aria-hidden="true" />
           <span>
-            LIVE · {formatNum(stats.latest.followers)}
+            {stats.live ? 'LIVE' : 'SNAPSHOT'} · {formatNum(stats.latest.followers)}
           </span>
         </a>
       </nav>
