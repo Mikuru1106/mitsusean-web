@@ -117,6 +117,7 @@ async function main() {
 
   const files = {};
   let downloaded = 0;
+  let retained = 0;
   for (const track of TRACKS) {
     try {
       const result = await withRetries(() => downloadTrack(track), track.bvid);
@@ -125,11 +126,20 @@ async function main() {
       console.log(`✓ ${track.bvid} 音频已更新 (${Math.round(result.bytes / 1024)} KiB)`);
     } catch (error) {
       if (previous[track.bvid]) {
-        files[track.bvid] = previous[track.bvid];
-        console.warn(`⚠ ${track.bvid} 下载失败，保留旧文件: ${error.message}`);
-      } else {
-        console.warn(`⚠ ${track.bvid} 下载失败，暂不生成文件: ${error.message}`);
+        const previousFile = resolve(ROOT, `public${previous[track.bvid].path}`);
+        try {
+          const previousSize = (await stat(previousFile)).size;
+          if (previousSize > 0) {
+            files[track.bvid] = previous[track.bvid];
+            retained += 1;
+            console.warn(`⚠ ${track.bvid} 下载失败，保留旧文件 (${previousSize} bytes): ${error.message}`);
+            continue;
+          }
+        } catch {
+          // 旧清单指向的文件不存在，继续报告失败。
+        }
       }
+      console.warn(`⚠ ${track.bvid} 下载失败，暂不生成文件: ${error.message}`);
     }
     await sleep(REQUEST_GAP_MS);
   }
@@ -142,7 +152,8 @@ async function main() {
   } catch {
     // Manifest was already written; no further action needed.
   }
-  if (downloaded === 0 && Object.keys(files).length === 0) {
+  console.log(`音频结果: 新下载 ${downloaded} 首，保留 ${retained} 首，共 ${Object.keys(files).length} 首`);
+  if (downloaded === 0 && retained === 0) {
     throw new Error('所有音频下载失败，未生成任何可播放文件');
   }
 }
