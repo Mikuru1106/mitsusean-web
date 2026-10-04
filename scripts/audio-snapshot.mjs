@@ -116,10 +116,12 @@ async function main() {
   }
 
   const files = {};
+  let downloaded = 0;
   for (const track of TRACKS) {
     try {
       const result = await withRetries(() => downloadTrack(track), track.bvid);
       files[track.bvid] = { ...result, title: track.title, updatedAt: new Date().toISOString() };
+      downloaded += 1;
       console.log(`✓ ${track.bvid} 音频已更新 (${Math.round(result.bytes / 1024)} KiB)`);
     } catch (error) {
       if (previous[track.bvid]) {
@@ -139,6 +141,9 @@ async function main() {
     console.log(`✓ 音频清单已写入 (${size.size} bytes)`);
   } catch {
     // Manifest was already written; no further action needed.
+  }
+  if (downloaded === 0 && Object.keys(files).length === 0) {
+    throw new Error('所有音频下载失败，未生成任何可播放文件');
   }
 }
 
