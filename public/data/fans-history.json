@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-09T07:09:12.149Z",
+  "updatedAt": "2026-10-10T06:42:47.253Z",
   "snapshots": [
     {
       "date": "2026-09-01",
@@ -272,6 +272,15 @@
       "likes": null,
       "videos": 81,
       "rate1": 95,
+      "rate7": null
+    },
+    {
+      "date": "2026-10-10",
+      "followers": 189454,
+      "views": null,
+      "likes": null,
+      "videos": 81,
+      "rate1": 835,
       "rate7": null
     }
   ],
