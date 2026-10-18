@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-17T05:21:40.974Z",
+  "updatedAt": "2026-10-18T05:28:50.156Z",
   "files": {
     "BV1CW411K7Rn": {
       "path": "/audio/BV1CW411K7Rn.m4a",
@@ -12,6 +12,12 @@
       "bytes": 5268248,
       "title": "言って。",
       "updatedAt": "2026-10-09T07:09:29.124Z"
+    },
+    "BV1dW41137on": {
+      "path": "/audio/BV1dW41137on.m4a",
+      "bytes": 3181206,
+      "title": "ただ君に晴れ",
+      "updatedAt": "2026-10-18T05:28:34.308Z"
     },
     "BV1cm411U7vi": {
       "path": "/audio/BV1cm411U7vi.m4a",
