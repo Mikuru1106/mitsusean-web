@@ -32,3 +32,6 @@ dist-ssr
 
 # Local reference snapshots
 .ref_*
+
+# WorkBuddy workspace data
+.workbuddy/

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { profile } from '../data/content';
 import { snapshots as staticSnaps, snapshotUpdated, type BiliSnapshot } from '../data/history';
+import { asset } from '../lib/asset';
 
 /** 大数缩写:98.7万 / 1.2亿 */
 export function formatNum(n: number): string {
@@ -180,7 +181,7 @@ export function useBiliStats(): BiliStats {
   // 加载采集器写入的每日快照(含 rate1/rate7),失败回退静态表
   useEffect(() => {
     let cancelled = false;
-    fetch('/data/fans-history.json')
+    fetch(asset('/data/fans-history.json'))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((json: FansHistoryFile) => {
         if (cancelled || !Array.isArray(json?.snapshots)) return;

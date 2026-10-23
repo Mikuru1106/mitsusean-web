@@ -1,3 +1,4 @@
+import { asset } from '../lib/asset';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -451,7 +452,7 @@ export default function Observatory() {
 
           {/* Stat cards */}
           <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <StatCard icon={<img src="/images/fans-icon.png" alt="粉丝数" className="inline-block size-8 object-contain" />} label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} week={stats.rate7} />
+            <StatCard icon={<img src={asset("/images/fans-icon.png")} alt="粉丝数" className="inline-block size-8 object-contain" />} label="粉丝数" sub="FANS" value={stats.latest.followers} daily={stats.daily.followers} week={stats.rate7} />
             <StatCard icon="▶" label="总播放量" sub="VIEWS" value={stats.latest.views} daily={stats.daily.views} />
             <StatCard icon="❤" label="总获赞" sub="LIKES" value={stats.latest.likes} daily={stats.daily.likes} />
             <StatCard icon="🎬" label="稿件数" sub="WORKS" value={stats.latest.videos} daily={stats.daily.videos} />

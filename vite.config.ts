@@ -86,6 +86,9 @@ function biliAudioProxy(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // GitHub Pages 项目页部署在 /<repo>/ 子路径下，由 CI 通过 VITE_BASE 注入；
+  // 本地开发与根域名部署保持 '/'，站内资源统一走 src/lib/asset.ts 拼接。
+  base: process.env.VITE_BASE || '/',
   plugins: [react(), biliAudioProxy()],
   server: {
     // 设计方案 B:dev 时经本地代理请求 B站公开接口,绕过浏览器 CORS

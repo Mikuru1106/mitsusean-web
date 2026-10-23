@@ -10,6 +10,7 @@ import Lottery from '../components/Lottery';
 import { profile, tracks } from '../data/content';
 import { formatNum, useBiliStats } from '../hooks/useBiliStats';
 import { useLrc, activeLrcIndex } from '../hooks/useLrc';
+import { asset } from '../lib/asset';
 
 
 /* ==================================================
@@ -382,7 +383,7 @@ function Hero() {
       {/* 动态壁纸背景(Wallpaper Engine「K先生」实机录制循环) */}
       <div className="yaron-wallpaper" aria-hidden="true">
         <video
-          src="/wallpaper.mp4"
+          src={asset('/wallpaper.mp4')}
           autoPlay
           muted
           loop

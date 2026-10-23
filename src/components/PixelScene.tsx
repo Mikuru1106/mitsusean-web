@@ -1,3 +1,4 @@
+import { asset } from '../lib/asset';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
@@ -6,10 +7,10 @@ type DogAnimation = 'run' | 'idle' | 'sleep' | 'drag';
 type Point = { x: number; y: number };
 
 const DOG_GIFS: Record<DogAnimation, string> = {
-  run: '/images/dog-run.gif', idle: '/images/dog-idle.gif', sleep: '/images/dog-sleep.gif', drag: '/images/dog-drag.gif',
+  run: asset('/images/dog-run.gif'), idle: asset('/images/dog-idle.gif'), sleep: asset('/images/dog-sleep.gif'), drag: asset('/images/dog-drag.gif'),
 };
 
-const HEROINE_GIFS = { run: '/images/heroine-run.gif', circle: '/images/heroine-circle.gif' } as const;
+const HEROINE_GIFS = { run: asset('/images/heroine-run.gif'), circle: asset('/images/heroine-circle.gif') } as const;
 
 const WORLD = { width: 960, height: 540, groundY: 510 };
 const DOG = { width: 168, height: 144, startX: 150, patrolMin: 0, patrolMax: WORLD.width - 168 };
@@ -201,7 +202,7 @@ export default function PixelScene() {
 
   return <div className="pixel-scene-shell">
     <div ref={stageRef} className="pixel-scene-stage platform-stage">
-      <img className="pixel-reference-background" src="/images/pixel-scene.jpg" alt="像素风房间参考场景" draggable={false} />
+      <img className="pixel-reference-background" src={asset("/images/pixel-scene.jpg")} alt="像素风房间参考场景" draggable={false} />
       <div className="pixel-reference-tint" aria-hidden="true" />
       <div className={`platform-heroine-wrap ${state === 'pickup' ? 'is-hugging' : ''} ${heroineFacing === 'right' ? 'face-right' : 'face-left'}`} style={{ left: `${(heroineX / WORLD.width) * 100}%`, top: `${(HEROINE.groundY / WORLD.height) * 100}%`, width: `${(HEROINE.width / WORLD.width) * 100}%`, height: `${(HEROINE.height / WORLD.height) * 100}%` }}>
         <PixelHeroine hugging={state === 'pickup'} />

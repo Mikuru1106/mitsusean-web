@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { featuredVideos } from '../data/videos';
+import { asset } from '../lib/asset';
 
 export interface BiliVideo {
   bvid: string;
@@ -50,7 +51,7 @@ async function fetchVideo(bvid: string): Promise<BiliVideo | null> {
 
 async function loadSnapshot(): Promise<BiliVideoPool> {
   try {
-    const res = await fetch('/data/videos.json', { cache: 'no-cache' });
+    const res = await fetch(asset('/data/videos.json'), { cache: 'no-cache' });
     if (!res.ok) return { videos: [], updatedAt: null, source: 'empty' };
     const json = (await res.json()) as VideoSnapshot;
     const videos = Array.isArray(json.videos) ? json.videos.filter((video) => video?.bvid) : [];

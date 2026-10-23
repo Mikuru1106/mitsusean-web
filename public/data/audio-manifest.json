@@ -1,29 +1,35 @@
 {
-  "updatedAt": "2026-10-23T05:46:51.049Z",
+  "updatedAt": "2026-10-23T17:02:17.332Z",
   "files": {
     "BV1CW411K7Rn": {
       "path": "/audio/BV1CW411K7Rn.m4a",
       "bytes": 3636401,
       "title": "ヒッチコック",
-      "updatedAt": "2026-10-11T06:49:46.838Z"
+      "updatedAt": "2026-10-23T17:02:09.556Z"
     },
     "BV19x41167us": {
       "path": "/audio/BV19x41167us.m4a",
       "bytes": 5268248,
       "title": "言って。",
-      "updatedAt": "2026-10-09T07:09:29.124Z"
+      "updatedAt": "2026-10-23T17:02:11.153Z"
     },
     "BV1dW41137on": {
       "path": "/audio/BV1dW41137on.m4a",
       "bytes": 3181206,
       "title": "ただ君に晴れ",
-      "updatedAt": "2026-10-18T05:28:34.308Z"
+      "updatedAt": "2026-10-23T17:02:12.753Z"
     },
     "BV1cm411U7vi": {
       "path": "/audio/BV1cm411U7vi.m4a",
       "bytes": 4474533,
       "title": "溶けた声で",
-      "updatedAt": "2026-10-17T05:21:31.810Z"
+      "updatedAt": "2026-10-23T17:02:14.555Z"
+    },
+    "BV1cL411W7Kz": {
+      "path": "/audio/BV1cL411W7Kz.m4a",
+      "bytes": 3639968,
+      "title": "好きだから。",
+      "updatedAt": "2026-10-23T17:02:16.119Z"
     }
   }
 }
