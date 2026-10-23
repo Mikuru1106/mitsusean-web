@@ -1,0 +1,39 @@
+{
+  "source": "api.lrc.cx (LyricSense)",
+  "updatedAt": "2026-10-23T18:15:17.533Z",
+  "tracks": {
+    "BV1CW411K7Rn": {
+      "title": "ヒッチコック",
+      "artist": "ヨルシカ",
+      "lyrics": "/lyrics/BV1CW411K7Rn.lrc",
+      "lines": 43,
+      "cover": "https://p2.music.126.net/FHi1cWVObsNewrw-Jf2w3g==/109951163289889776.jpg?param=300y300"
+    },
+    "BV19x41167us": {
+      "title": "言って。",
+      "artist": "ヨルシカ",
+      "lyrics": "/lyrics/BV19x41167us.lrc",
+      "lines": 47,
+      "cover": "https://p1.music.126.net/rD6Ul3DVakQkD8_VeL-aRw==/19162288649094546.jpg?param=300y300"
+    },
+    "BV1dW41137on": {
+      "title": "ただ君に晴れ",
+      "artist": "ヨルシカ",
+      "lyrics": "/lyrics/BV1dW41137on.lrc",
+      "lines": 50,
+      "cover": "https://p2.music.126.net/FHi1cWVObsNewrw-Jf2w3g==/109951163289889776.jpg?param=300y300"
+    },
+    "BV1cm411U7vi": {
+      "title": "溶けた声で",
+      "artist": "culicc_",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/df/4f/c7/df4fc7b5-095b-7519-c024-99e63e92eca8/8052869101697.jpg/300x300bb.jpg"
+    },
+    "BV1cL411W7Kz": {
+      "title": "好きだから。",
+      "artist": "『ユイカ』",
+      "lyrics": "/lyrics/BV1cL411W7Kz.lrc",
+      "lines": 81,
+      "cover": "https://p2.music.126.net/ozNsc3XPpvMQlHYyU9LVAg==/109951166125448895.jpg?param=300y300"
+    }
+  }
+}

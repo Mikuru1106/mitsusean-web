@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "snapshot": "node scripts/snapshot.mjs",
     "videos-snapshot": "node scripts/videos-snapshot.mjs",
-    "audio-snapshot": "node scripts/audio-snapshot.mjs"
+    "audio-snapshot": "node scripts/audio-snapshot.mjs",
+    "lyrics-snapshot": "node scripts/lyrics-snapshot.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

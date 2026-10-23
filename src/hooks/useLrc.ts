@@ -8,6 +8,9 @@ export interface LrcLine {
 
 const CACHE_PREFIX = 'mizusean-lrc-v1:';
 
+/** 歌词里的制作人员信息行（作词/作曲/编曲…），不适合当作歌词滚动 */
+const CREDIT_LINE = /^(作词|作詞|作曲|编曲|編曲|混音|母带|母帶|吉他|贝斯|貝斯|鼓|制作人|製作人|出品|监制|監製|录音|錄音|和声|和聲|统筹|企划|策劃)\s*[:：]/;
+
 /** 解析 LRC 文本为 {time, text} 行(多时间标签取首个) */
 export function parseLrc(raw: string): LrcLine[] {
   const lines: LrcLine[] = [];
@@ -16,7 +19,7 @@ export function parseLrc(raw: string): LrcLine[] {
     if (!m) continue;
     const time = Number(m[1]) * 60 + Number(m[2]);
     const text = m[3].trim();
-    if (!text) continue;
+    if (!text || CREDIT_LINE.test(text)) continue;
     // 同一时间戳的多行通常是原文与译文,合并成一句展示
     const prev = lines[lines.length - 1];
     if (prev && Math.abs(prev.time - time) < 0.001) prev.text += ` / ${text}`;
@@ -45,8 +48,10 @@ const readCache = (key: string): string | null => {
 }
 
 /**
- * 获取带时间轴歌词:优先读取曲目自带的站内 LRC 文件,
- * 否则从 LRCLIB(开放歌词库)获取。
+ * 获取带时间轴歌词:
+ * 1) 站内 LRC 优先——由 scripts/lyrics-snapshot.mjs 从 LyricSense(api.lrc.cx)抓取，
+ *    随站点一起部署，不受接口跨域与收录情况影响；
+ * 2) 站内文件缺失或为空时，回退 LRCLIB 开放歌词库兜底。
  * 返回 null = 暂无歌词。
  */
 export function useLrc(track: Track): LrcLine[] | null {
@@ -56,7 +61,7 @@ export function useLrc(track: Track): LrcLine[] | null {
     let cancelled = false;
     setLines(null);
 
-    // 站内 LRC 优先:文件随站点部署,不受歌词库收录情况影响
+    // 站内 LRC 优先:LyricSense 抓取的歌词随站点部署,不依赖任何在线接口
     if (track.lyrics) {
       fetch(track.lyrics)
         .then((res) => (res.ok ? res.text() : ''))

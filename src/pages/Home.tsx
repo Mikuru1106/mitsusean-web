@@ -24,9 +24,7 @@ function useMusicPlayer() {
   const [activeIdx, setActiveIdx] = useState(-1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadedBvid = useRef<string | null>(null);
-  const localSourceRef = useRef(false);
   const idxRef = useRef(0);
-  const bvidRef = useRef('');
   idxRef.current = idx;
   const track = tracks[idx];
   const lrcLines = useLrc(track);
@@ -40,18 +38,8 @@ function useMusicPlayer() {
     let audio = audioRef.current;
     if (!audio) {
       audio = new Audio();
-      audio.addEventListener('error', () => {
-        if (localSourceRef.current) {
-          localSourceRef.current = false;
-          const player = audioRef.current;
-          if (!player) return;
-          player.src = `/api/bili-audio?bvid=${bvidRef.current}`;
-          loadedBvid.current = bvidRef.current;
-          void player.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-          return;
-        }
-        setPlaying(false);
-      });
+      // 音频缺失或解码失败:停在暂停态,不再请求任何外部音源
+      audio.addEventListener('error', () => setPlaying(false));
       audio.addEventListener('ended', () => {
         // 播完自动切下一首
         const next = (idxRef.current + 1) % tracks.length;
@@ -64,11 +52,13 @@ function useMusicPlayer() {
     audio.volume = AUDIO_VOLUME;
     if (loadedBvid.current !== bvid) {
       const selectedTrack = tracks.find((item) => item.bvid === bvid);
-      const localSource = selectedTrack?.audioSrc;
-      bvidRef.current = bvid;
-      localSourceRef.current = Boolean(localSource);
-      // 优先播放 GitHub Actions 归档的静态音频，失败后回退到 B站代理。
-      audio.src = localSource ?? `/api/bili-audio?bvid=${bvid}`;
+      // 音源只有一个来源:站内归档的静态音频
+      if (!selectedTrack?.audioSrc) {
+        loadedBvid.current = null;
+        setPlaying(false);
+        return false;
+      }
+      audio.src = selectedTrack.audioSrc;
       loadedBvid.current = bvid;
     }
     // 首次播放时接入 Web Audio 分析器(驱动头像可视化)
@@ -311,14 +301,25 @@ function MusicCard({ music }: { music: MusicApi }) {
 
   return (
     <div className="yaron-quote-card w-full gap-3 py-1.5 pl-1.5 pr-5" style={{ zoom }}>
-      {/* 播放/暂停 */}
+      {/* 播放/暂停(有封面时作为按钮底图) */}
       <button
         type="button"
         onClick={togglePlay}
         aria-label={playing ? `暂停《${track.title}》` : `播放《${track.title}》`}
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#ff8fab] text-xs text-white shadow-[0_6px_16px_rgba(255,143,171,0.45)] transition-transform duration-300 hover:scale-110"
+        className="relative size-8 shrink-0 overflow-hidden rounded-full bg-[#ff8fab] text-[10px] text-white shadow-[0_6px_16px_rgba(255,143,171,0.45)] transition-transform duration-300 hover:scale-110"
       >
-        {playing ? <FaPause /> : <FaPlay className="ml-0.5" />}
+        {track.cover && (
+          <img
+            src={track.cover}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 size-full object-cover"
+          />
+        )}
+        <span className="absolute inset-0 grid place-items-center bg-[#241322]/30">
+          {playing ? <FaPause /> : <FaPlay className="ml-0.5" />}
+        </span>
       </button>
 
       {/* 歌词 + 歌名(点击切歌,切歌自动续播) */}

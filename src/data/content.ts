@@ -286,19 +286,58 @@ export const navLinks = [
 export interface Track {
   title: string;
   artist: string;
-  /** B站 MV 稿件(音频经 dev 中间件转发播放) */
+  /** 曲目来源稿件，仅作信息展示；播放不再经过 B 站接口 */
   bvid: string;
-  /** 可选的静态音频文件；不存在时由播放器回退到 B站代理 */
+  /** 站内静态音频，播放的唯一来源（由 scripts/audio-snapshot.mjs 归档） */
   audioSrc?: string;
-  /** 可选的站内 LRC 文件；配置后优先于在线歌词库 */
+  /** 站内 LRC 文件，由 scripts/lyrics-snapshot.mjs 从 LyricSense 接口抓取 */
   lyrics?: string;
+  /** 封面地址，来自 LyricSense 的 cover 接口（已收窄到 300px） */
+  cover?: string;
 }
 
-/** 首页音乐卡片:点击切换;歌词优先读取站内 LRC,否则从 LRCLIB 获取 */
+/** 首页音乐卡片：点击切换；歌词来自 LyricSense，播放只读站内音频 */
 export const tracks: Track[] = [
-  { title: 'ヒッチコック', artist: 'ヨルシカ', bvid: 'BV1CW411K7Rn', audioSrc: asset('/audio/BV1CW411K7Rn.m4a') },
-  { title: '言って。', artist: 'ヨルシカ', bvid: 'BV19x41167us', audioSrc: asset('/audio/BV19x41167us.m4a') },
-  { title: 'ただ君に晴れ', artist: 'ヨルシカ', bvid: 'BV1dW41137on', audioSrc: asset('/audio/BV1dW41137on.m4a') },
-  { title: '溶けた声で', artist: 'culicc_', bvid: 'BV1cm411U7vi', audioSrc: asset('/audio/BV1cm411U7vi.m4a'), lyrics: asset('/lyrics/toketa-koe.lrc') },
-  { title: '好きだから。', artist: '『ユイカ』', bvid: 'BV1cL411W7Kz', audioSrc: asset('/audio/BV1cL411W7Kz.m4a') },
+  {
+    title: 'ヒッチコック',
+    artist: 'ヨルシカ',
+    bvid: 'BV1CW411K7Rn',
+    audioSrc: asset('/audio/BV1CW411K7Rn.m4a'),
+    lyrics: asset('/lyrics/BV1CW411K7Rn.lrc'),
+    cover: 'https://p2.music.126.net/FHi1cWVObsNewrw-Jf2w3g==/109951163289889776.jpg?param=300y300',
+  },
+  {
+    title: '言って。',
+    artist: 'ヨルシカ',
+    bvid: 'BV19x41167us',
+    audioSrc: asset('/audio/BV19x41167us.m4a'),
+    lyrics: asset('/lyrics/BV19x41167us.lrc'),
+    cover: 'https://p1.music.126.net/rD6Ul3DVakQkD8_VeL-aRw==/19162288649094546.jpg?param=300y300',
+  },
+  {
+    title: 'ただ君に晴れ',
+    artist: 'ヨルシカ',
+    bvid: 'BV1dW41137on',
+    audioSrc: asset('/audio/BV1dW41137on.m4a'),
+    lyrics: asset('/lyrics/BV1dW41137on.lrc'),
+    // LyricSense 对这张专辑返回的是同一张封面
+    cover: 'https://p2.music.126.net/FHi1cWVObsNewrw-Jf2w3g==/109951163289889776.jpg?param=300y300',
+  },
+  {
+    title: '溶けた声で',
+    artist: 'culicc_',
+    bvid: 'BV1cm411U7vi',
+    audioSrc: asset('/audio/BV1cm411U7vi.m4a'),
+    // LyricSense 这首只有无时间轴的纯文本，沿用站内人工整理的歌词
+    lyrics: asset('/lyrics/toketa-koe.lrc'),
+    cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/df/4f/c7/df4fc7b5-095b-7519-c024-99e63e92eca8/8052869101697.jpg/300x300bb.jpg',
+  },
+  {
+    title: '好きだから。',
+    artist: '『ユイカ』',
+    bvid: 'BV1cL411W7Kz',
+    audioSrc: asset('/audio/BV1cL411W7Kz.m4a'),
+    lyrics: asset('/lyrics/BV1cL411W7Kz.lrc'),
+    cover: 'https://p2.music.126.net/ozNsc3XPpvMQlHYyU9LVAg==/109951166125448895.jpg?param=300y300',
+  },
 ];

@@ -17,7 +17,8 @@
 5. 保存并部署。`functions/api/` 会随 Pages 一起部署，生产环境会提供：
    - `/api/bili/x/relation/stat?vmid=431115683`
    - `/api/bili/x/web-interface/view?bvid=...`
-   - `/api/bili-audio?bvid=...`
+
+> 音乐播放已不再经过 B 站：音源只读 `public/audio/` 下的归档文件，歌词来自 LyricSense（`scripts/lyrics-snapshot.mjs` 抓取到 `public/lyrics/`），因此原先的 `/api/bili-audio` 代理函数已移除。
 
 GitHub Actions 会每天生成 `public/data/fans-history.json` 和 `public/data/videos.json`。如果 Pages 已连接 GitHub，快照提交会自动触发重新构建；也可以在 Pages 项目中手动重新部署。
 
@@ -51,9 +52,8 @@ npx wrangler pages dev dist
 - `http://localhost:8788/`
 - `http://localhost:8788/about`
 - `http://localhost:8788/api/bili/x/relation/stat?vmid=431115683`
-- `http://localhost:8788/api/bili-audio?bvid=BV...`
 
-不要把 `BILI_COOKIE` 写进代码、`.env`、GitHub 日志或公开 Pages 变量。音频代理仅接受合法 BV 号，并支持浏览器的 Range 请求。
+不要把 `BILI_COOKIE` 写进代码、`.env`、GitHub 日志或公开 Pages 变量。
 
 ## 自定义域名
 
@@ -63,4 +63,4 @@ npx wrangler pages dev dist
 
 - `/api/*` 由 Pages Functions 处理；其他页面和资源由 `dist/` 静态托管。
 - 前端仍使用同域 `/api/...` 路径，开发环境由 Vite 代理，生产环境由 Pages Functions 处理。
-- B 站接口、视频 CDN 和音频流可能受 B 站风控、Cookie 过期或 Referer 校验影响；接口失败时页面会回退到仓库中的静态快照。
+- B 站接口与视频 CDN 可能受 B 站风控、Cookie 过期或 Referer 校验影响；接口失败时页面会回退到仓库中的静态快照。

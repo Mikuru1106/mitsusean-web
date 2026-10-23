@@ -1,5 +1,6 @@
 import { SiBilibili, SiTiktok, SiQq } from 'react-icons/si';
 import { profile } from '../data/content';
+import { asset } from '../lib/asset';
 
 type SocialConfig = {
   icon?: React.ReactNode;
@@ -13,7 +14,7 @@ const configs: Record<string, SocialConfig> = {
   bilibili: { icon: <SiBilibili />, bg: '#FB7299' },
   douyin: { icon: <SiTiktok />, bg: '#2b2b2b' },
   qq: { icon: <SiQq />, bg: '#12B7F5' },
-  mihuashi: { imgSrc: '/mihuashi.ico', bg: '#ffffff' },
+  mihuashi: { imgSrc: asset('/mihuashi.ico'), bg: '#ffffff' },
 };
 
 export default function SocialLinks() {
