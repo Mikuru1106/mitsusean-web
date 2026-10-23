@@ -132,6 +132,9 @@ function weekDelta(snaps: BiliSnapshot[]): number | null {
 const LIVE_CACHE_KEY = 'mizusean-bili-live';
 const LIVE_TTL = 30 * 60 * 1000;
 
+/** 静态托管（GitHub Pages）没有 /api，只有 dev 的 Vite 代理能取实时数据；生产用每日快照 */
+const LIVE_API_AVAILABLE = import.meta.env.DEV;
+
 interface LiveInfo {
   follower: number;
   ts: number;
@@ -158,6 +161,7 @@ function writeLiveCache(info: LiveInfo) {
 }
 
 async function fetchLiveFollower(): Promise<number | null> {
+  if (!LIVE_API_AVAILABLE) return null;
   try {
     const res = await fetch(`/api/bili/x/relation/stat?vmid=${profile.mid}`);
     if (!res.ok) return null;
