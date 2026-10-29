@@ -34,6 +34,9 @@ jobs:
         # 项目页地址是 /<repo>/，必须给 Vite 注入 base，否则站内资源全部 404。
         env:
           VITE_BASE: /mitsusean-web/
+          # Bilibili API proxy (Cloudflare Worker). Set repo Variable BILI_PROXY_URL to enable LIVE stats;
+          # leave it unset and the site keeps using the daily snapshot.
+          VITE_LIVE_API: ${{ vars.BILI_PROXY_URL }}
         run: npm run build
 
       - name: Add SPA fallback

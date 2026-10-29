@@ -125,15 +125,27 @@ function weekDelta(snaps: BiliSnapshot[]): number | null {
 
 /* ==================================================
    实时兜底(设计方案 B)
-   dev 下经 Vite 代理 /api/bili 请求公开接口,取实时粉丝数
-   覆盖「今日」快照;失败或生产 CORS 受限时静默回退快照。
-   结果写入 localStorage,30 分钟内不重复请求。
+   经代理请求 B站公开接口,取实时粉丝数覆盖「今日」快照;
+   任何失败都静默回退快照。结果写入 localStorage,30 分钟内不重复请求。
+
+   代理地址来源,按优先级:
+   1. VITE_LIVE_API —— 可用环境变量覆盖。
+   2. dev 下的 Vite 代理 /api/bili。
+   3. 生产环境用已部署的 Cloudflare Worker(workers/bili-proxy.ts):
+      浏览器直接请求 B站会被 Referer 校验挡成 403,所以线上必须有这一层转发。
    ================================================== */
 const LIVE_CACHE_KEY = 'mizusean-bili-live';
 const LIVE_TTL = 30 * 60 * 1000;
 
-/** 静态托管（GitHub Pages）没有 /api，只有 dev 的 Vite 代理能取实时数据；生产用每日快照 */
-const LIVE_API_AVAILABLE = import.meta.env.DEV;
+/** 已部署的 B站接口代理;换账号/换域名时改这里,或用 VITE_LIVE_API 覆盖 */
+const DEFAULT_LIVE_API = 'https://mitsusean-bili-proxy.981532884.workers.dev';
+
+export const BILI_API_BASE = (
+  (import.meta.env as Record<string, string | undefined>).VITE_LIVE_API ||
+  (import.meta.env.DEV ? '/api/bili' : DEFAULT_LIVE_API)
+).replace(/\/+$/, '');
+
+const LIVE_API_AVAILABLE = BILI_API_BASE.length > 0;
 
 interface LiveInfo {
   follower: number;
@@ -163,7 +175,7 @@ function writeLiveCache(info: LiveInfo) {
 async function fetchLiveFollower(): Promise<number | null> {
   if (!LIVE_API_AVAILABLE) return null;
   try {
-    const res = await fetch(`/api/bili/x/relation/stat?vmid=${profile.mid}`);
+    const res = await fetch(`${BILI_API_BASE}/x/relation/stat?vmid=${profile.mid}`);
     if (!res.ok) return null;
     const json = await res.json();
     const follower = json?.data?.follower;
@@ -181,6 +193,8 @@ export function useBiliStats(): BiliStats {
     const cached = readLiveCache();
     return cached && Date.now() - cached.ts < LIVE_TTL ? cached : null;
   });
+  /** 采集器写入的真实更新时间;读不到时才回退到静态表里写死的常量 */
+  const [fileUpdated, setFileUpdated] = useState<string | null>(null);
 
   // 加载采集器写入的每日快照(含 rate1/rate7),失败回退静态表
   useEffect(() => {
@@ -191,6 +205,7 @@ export function useBiliStats(): BiliStats {
         if (cancelled || !Array.isArray(json?.snapshots)) return;
         const built = buildSnapshots(json);
         if (built.length) setSnaps(built);
+        if (typeof json.updatedAt === 'string') setFileUpdated(json.updatedAt);
       })
       .catch(() => {
         /* 回退静态表 */
@@ -219,7 +234,7 @@ export function useBiliStats(): BiliStats {
     let latest = snapshots[snapshots.length - 1];
     const prev = snapshots[snapshots.length - 2] ?? latest;
 
-    let updated = snapshotUpdated;
+    let updated = fileUpdated ?? snapshotUpdated;
     let isLive = false;
 
     if (live) {
@@ -251,7 +266,7 @@ export function useBiliStats(): BiliStats {
       },
       snapshots,
     };
-  }, [snaps, live]);
+  }, [snaps, live, fileUpdated]);
 }
 
 /** 取最近 n 天快照 */

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { featuredVideos } from '../data/videos';
 import { asset } from '../lib/asset';
+import { BILI_API_BASE } from './useBiliStats';
 
 export interface BiliVideo {
   bvid: string;
@@ -29,8 +30,9 @@ export interface BiliVideoPool {
 let poolPromise: Promise<BiliVideoPool> | null = null;
 
 async function fetchVideo(bvid: string): Promise<BiliVideo | null> {
+  if (!BILI_API_BASE) return null;
   try {
-    const res = await fetch(`/api/bili/x/web-interface/view?bvid=${bvid}`);
+    const res = await fetch(`${BILI_API_BASE}/x/web-interface/view?bvid=${bvid}`);
     if (!res.ok) return null;
     const json = await res.json();
     const data = json?.data;

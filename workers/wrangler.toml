@@ -1,0 +1,7 @@
+name = "mitsusean-bili-proxy"
+main = "bili-proxy.ts"
+compatibility_date = "2026-09-27"
+
+# 部署：npx wrangler deploy --config workers/wrangler.toml
+# 可选：在 Cloudflare 控制台为本 Worker 配置 Secret「BILI_COOKIE」
+# 部署完成后把地址填到仓库变量 / 构建环境的 VITE_LIVE_API
