@@ -3,5 +3,5 @@ main = "bili-proxy.ts"
 compatibility_date = "2026-09-27"
 
 # 部署：npx wrangler deploy --config workers/wrangler.toml
-# 可选：在 Cloudflare 控制台为本 Worker 配置 Secret「BILI_COOKIE」
-# 部署完成后把地址填到仓库变量 / 构建环境的 VITE_LIVE_API
+# 注意：Cloudflare 出口 IP 被 B 站整段风控（实测 412），在 CF 网络上取不到数据。
+# 本 Worker 的代码可作为其它未被封节点（VPS / 其它云函数）的参考实现。

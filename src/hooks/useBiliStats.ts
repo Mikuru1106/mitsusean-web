@@ -137,8 +137,12 @@ function weekDelta(snaps: BiliSnapshot[]): number | null {
 const LIVE_CACHE_KEY = 'mizusean-bili-live';
 const LIVE_TTL = 30 * 60 * 1000;
 
-/** 已部署的 B站接口代理;换账号/换域名时改这里,或用 VITE_LIVE_API 覆盖 */
-const DEFAULT_LIVE_API = 'https://mitsusean-bili-proxy.981532884.workers.dev';
+/**
+ * 线上实时接口地址。默认留空:Cloudflare 边缘节点被 B 站整段风控(实测 -412),
+ * 指向 Worker 只会让每次加载都打一个必然失败的请求。
+ * 日后若有未被封的代理(自建 VPS 等),用 VITE_LIVE_API 注入即可。
+ */
+const DEFAULT_LIVE_API = '';
 
 export const BILI_API_BASE = (
   (import.meta.env as Record<string, string | undefined>).VITE_LIVE_API ||

@@ -43,14 +43,42 @@ function corsHeaders(origin: string | null): Record<string, string> {
   };
 }
 
-/** B站会拦数据中心 IP 的匿名请求（-412），需要浏览器端才有的 buvid3 标识 */
+/** B站会拦数据中心 IP 的匿名请求（-412），随机 buvid3 不一定管用 */
 function buvid3(): string {
   const hex = () => Math.floor(Math.random() * 16).toString(16);
   const block = (n: number) => Array.from({ length: n }, hex).join('').toUpperCase();
   return `${block(8)}-${block(4)}-${block(4)}-${block(4)}-${block(12)}infoc`;
 }
 
-function biliHeaders(env: Env): Headers {
+/**
+ * 无 Cookie 时向 B站指纹接口要一对真实 buvid3/buvid4。
+ * 同一 isolate 内缓存 6 小时，避免每次请求都多打一次。
+ */
+let fingerprint: { cookie: string; at: number } | null = null;
+const FP_TTL = 6 * 60 * 60 * 1000;
+
+async function anonymousCookie(): Promise<string> {
+  if (fingerprint && Date.now() - fingerprint.at < FP_TTL) return fingerprint.cookie;
+  try {
+    const res = await fetch('https://api.bilibili.com/x/frontend/finger/spi', {
+      headers: { 'User-Agent': UA, Referer: 'https://www.bilibili.com/' },
+      signal: AbortSignal.timeout(8000),
+    });
+    const payload = (await res.json()) as { data?: { b_3?: string; b_4?: string } };
+    const b3 = payload?.data?.b_3;
+    const b4 = payload?.data?.b_4;
+    if (typeof b3 === 'string' && typeof b4 === 'string') {
+      const cookie = `buvid3=${b3}; buvid4=${b4}; b_nut=${Math.floor(Date.now() / 1000)}`;
+      fingerprint = { cookie, at: Date.now() };
+      return cookie;
+    }
+  } catch {
+    /* 取不到指纹就退化为随机 buvid3 */
+  }
+  return `buvid3=${buvid3()}`;
+}
+
+async function biliHeaders(env: Env): Promise<Headers> {
   const headers = new Headers({
     'User-Agent': UA,
     Referer: 'https://space.bilibili.com/',
@@ -58,7 +86,7 @@ function biliHeaders(env: Env): Headers {
     Accept: 'application/json, text/plain, */*',
     'Accept-Language': 'zh-CN,zh;q=0.9',
   });
-  headers.set('Cookie', env.BILI_COOKIE || `buvid3=${buvid3()}`);
+  headers.set('Cookie', env.BILI_COOKIE || (await anonymousCookie()));
   return headers;
 }
 
@@ -68,6 +96,12 @@ const json = (body: unknown, status: number, cors: Record<string, string>) =>
     headers: { 'content-type': 'application/json; charset=utf-8', ...cors },
   });
 
+/**
+ * 已知限制（2026-10 实测）：
+ * Cloudflare 的出口 IP 被 B 站整段风控，即使带上有效的登录 Cookie，
+ * x/relation/stat 与 x/web-interface/card 仍返回 -412 request was banned。
+ * 因此本 Worker 在 CF 网络上无法直接取数，除非把出口换成未被封的节点（VPS 等）。
+ */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
@@ -92,7 +126,7 @@ export default {
     try {
       const res = await fetch(upstream.toString(), {
         method: request.method,
-        headers: biliHeaders(env),
+        headers: await biliHeaders(env),
         signal: AbortSignal.timeout(10_000),
       });
       const body = request.method === 'HEAD' ? '' : await res.text();
