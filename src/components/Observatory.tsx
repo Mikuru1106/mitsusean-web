@@ -427,9 +427,7 @@ function ClipBars() {
    ================================================== */
 export default function Observatory() {
   const stats = useBiliStats();
-  const updatedShort = stats.live
-    ? `${stats.updated.slice(11, 16)} 实时`
-    : stats.updated.slice(5, 10).replace('-', '/');
+  const updatedShort = stats.updated.slice(5, 10).replace('-', '/');
 
   return (
     <section id="observatory" className="relative w-full px-4 py-20 md:px-10 md:py-28">
@@ -446,7 +444,7 @@ export default function Observatory() {
               </h2>
             </div>
             <span className={`obs-pill ${stats.live ? 'is-active' : ''}`}>
-              ● {stats.live ? `LIVE · 实时获取于 ${updatedShort}` : `快照更新于 ${updatedShort}`}
+              ● {stats.live ? 'LIVE · 每小时同步' : `快照更新于 ${updatedShort}`}
             </span>
           </div>
 

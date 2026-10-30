@@ -41,7 +41,7 @@ export default function Footer() {
         <p className="text-center text-sm font-light md:text-right text-[#5f4b52]">
           做得很粗糙，后续会优化页面
           <span className="block text-[10px] tracking-[0.2em] text-[#b76e79]/70 mt-0.5">
-            数据{stats.live ? '实时获取' : '快照'}更新于 {updated}
+            {stats.live ? '数据每小时同步' : `快照更新于 ${updated}`}
           </span>
         </p>
       </div>

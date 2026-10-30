@@ -151,6 +151,9 @@ export const BILI_API_BASE = (
 
 const LIVE_API_AVAILABLE = BILI_API_BASE.length > 0;
 
+/** 数据新鲜度窗口:采集工作流每小时一次,留出延迟余量按 3 小时计 */
+const FRESH_WINDOW = 3 * 60 * 60 * 1000;
+
 interface LiveInfo {
   follower: number;
   ts: number;
@@ -203,7 +206,7 @@ export function useBiliStats(): BiliStats {
   // 加载采集器写入的每日快照(含 rate1/rate7),失败回退静态表
   useEffect(() => {
     let cancelled = false;
-    fetch(asset('/data/fans-history.json'))
+    fetch(asset('/data/fans-history.json'), { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((json: FansHistoryFile) => {
         if (cancelled || !Array.isArray(json?.snapshots)) return;
@@ -240,6 +243,12 @@ export function useBiliStats(): BiliStats {
 
     let updated = fileUpdated ?? snapshotUpdated;
     let isLive = false;
+
+    // 采集工作流每小时跑一次并触发重新部署,因此「更新时间足够新」即视为实时
+    if (fileUpdated) {
+      const fileTs = Date.parse(fileUpdated);
+      if (Number.isFinite(fileTs) && Date.now() - fileTs < FRESH_WINDOW) isLive = true;
+    }
 
     if (live) {
       // 实时粉丝数覆盖「今日」快照(views/likes/videos 无免登录实时接口,沿用快照值)
