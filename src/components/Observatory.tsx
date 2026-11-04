@@ -42,6 +42,14 @@ function dailyDeltas(snaps: BiliSnapshot[]) {
   return out;
 }
 
+/** 该指标最后一次真正采到的日期（采集器断档时用来标注数据停在哪天） */
+function lastCapturedDate(snaps: BiliSnapshot[], key: 'views' | 'likes' | 'videos') {
+  for (let i = snaps.length - 1; i >= 0; i--) {
+    if (Number.isFinite(snaps[i][key] as number)) return snaps[i].date;
+  }
+  return null;
+}
+
 /** 峰值日：单日涨粉最大的一天 */
 function peakOf(deltas: { date: string; delta: number }[]) {
   return deltas.reduce(
@@ -710,6 +718,9 @@ export default function Observatory() {
     };
   }, [stats]);
 
+  const viewsCaptured = lastCapturedDate(stats.snapshots, 'views');
+  const likesCaptured = lastCapturedDate(stats.snapshots, 'likes');
+
   const metaRight = stats.live ? 'LIVE · 每小时同步' : `快照 · ${mdShort(stats.updated.slice(0, 10))}`;
   const snapshotCount = stats.snapshots.length;
   const firstDate = stats.snapshots[0]?.date ?? '';
@@ -792,8 +803,20 @@ export default function Observatory() {
             daily={stats.daily.followers}
             week={stats.rate7}
           />
-          <KpiCell sub="VIEWS" label="播放" value={stats.latest.views} daily={stats.daily.views} />
-          <KpiCell sub="LIKES" label="获赞" value={stats.latest.likes} daily={stats.daily.likes} />
+          <KpiCell
+            sub="VIEWS"
+            label="播放"
+            value={stats.latest.views}
+            daily={stats.daily.views}
+            flatNote={viewsCaptured ? `${mdShort(viewsCaptured)} 采集` : '待采集'}
+          />
+          <KpiCell
+            sub="LIKES"
+            label="获赞"
+            value={stats.latest.likes}
+            daily={stats.daily.likes}
+            flatNote={likesCaptured ? `${mdShort(likesCaptured)} 采集` : '待采集'}
+          />
           <KpiCell
             sub="WORKS"
             label="稿件"

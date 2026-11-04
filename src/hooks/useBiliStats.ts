@@ -68,15 +68,25 @@ function buildSnapshots(json: FansHistoryFile): BiliSnapshot[] {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** 总量展示兜底:某日播放/获赞/稿件缺失(采集器未读到,记为 NaN)时,沿用静态表同日值(同日缺失则取最后一条) */
-function applyStaticFallback(s: BiliSnapshot): BiliSnapshot {
+/** 快照序列里该指标最后一次读到的有效值(采集器某天没采到时用它保底) */
+function lastKnownValue(snaps: BiliSnapshot[], key: MetricKey): number | null {
+  for (let i = snaps.length - 1; i >= 0; i--) {
+    const v = snaps[i][key] as number;
+    if (Number.isFinite(v)) return v;
+  }
+  return null;
+}
+
+/** 总量展示兜底:某日播放/获赞/稿件缺失(采集器未读到,记为 NaN)时,
+ *  优先沿用历史上最后一次真实采集到的值;整段历史都没有再退回静态表。 */
+function applyStaticFallback(s: BiliSnapshot, snaps: BiliSnapshot[]): BiliSnapshot {
   const statByDate = new Map(staticSnaps.map((x) => [x.date, x]));
   const stat = statByDate.get(s.date) ?? staticSnaps[staticSnaps.length - 1];
   return {
     ...s,
-    views: Number.isNaN(s.views) ? stat.views : s.views,
-    likes: Number.isNaN(s.likes) ? stat.likes : s.likes,
-    videos: Number.isNaN(s.videos) ? stat.videos : s.videos,
+    views: Number.isNaN(s.views) ? lastKnownValue(snaps, 'views') ?? stat.views : s.views,
+    likes: Number.isNaN(s.likes) ? lastKnownValue(snaps, 'likes') ?? stat.likes : s.likes,
+    videos: Number.isNaN(s.videos) ? lastKnownValue(snaps, 'videos') ?? stat.videos : s.videos,
   };
 }
 
@@ -265,7 +275,7 @@ export function useBiliStats(): BiliStats {
 
     // 每日增长只基于真实快照计算;总量展示时给播放/获赞/稿件补静态值兜底
     return {
-      latest: applyStaticFallback(latest),
+      latest: applyStaticFallback(latest, snapshots),
       prev,
       updated,
       live: isLive,
