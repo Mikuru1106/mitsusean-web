@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-17T19:38:37.201Z",
+  "updatedAt": "2026-11-18T02:09:09.776Z",
   "snapshots": [
     {
       "date": "2026-09-01",
@@ -627,12 +627,12 @@
     },
     {
       "date": "2026-11-18",
-      "followers": 219116,
+      "followers": 219140,
       "views": null,
       "likes": null,
-      "videos": 95,
-      "rate1": 121,
-      "rate7": 3033
+      "videos": 94,
+      "rate1": 145,
+      "rate7": 3057
     }
   ],
   "historyStart": "2026-09-01"
