@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { asset } from '../lib/asset';
 import { songs } from '../data/content';
 import type { BiliSnapshot } from '../data/history';
 import {
@@ -33,7 +34,7 @@ const mdShort = (iso: string) => iso.slice(5).replace('-', '/');
 const spanDays = (from: string, to: string) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000) + 1;
 
-/** 单日涨粉序列（热力与叙述共用） */
+/** 单日涨粉序列 */
 function dailyDeltas(snaps: BiliSnapshot[]) {
   const out: { date: string; delta: number }[] = [];
   for (let i = 1; i < snaps.length; i++) {
@@ -42,7 +43,15 @@ function dailyDeltas(snaps: BiliSnapshot[]) {
   return out;
 }
 
-/** 该指标最后一次真正采到的日期（采集器断档时用来标注数据停在哪天） */
+/** 峰值日：单日涨粉最大的一天 */
+function peakOf(deltas: { date: string; delta: number }[]) {
+  return deltas.reduce((best, cur) => (cur.delta > best.delta ? cur : best), {
+    date: '',
+    delta: 0,
+  });
+}
+
+/** 该指标最后一次真正采到的日期（采集断档时标注数据停在哪天） */
 function lastCapturedDate(snaps: BiliSnapshot[], key: 'views' | 'likes' | 'videos') {
   for (let i = snaps.length - 1; i >= 0; i--) {
     if (Number.isFinite(snaps[i][key] as number)) return snaps[i].date;
@@ -50,15 +59,7 @@ function lastCapturedDate(snaps: BiliSnapshot[], key: 'views' | 'likes' | 'video
   return null;
 }
 
-/** 峰值日：单日涨粉最大的一天 */
-function peakOf(deltas: { date: string; delta: number }[]) {
-  return deltas.reduce(
-    (best, cur) => (cur.delta > best.delta ? cur : best),
-    { date: '', delta: 0 },
-  );
-}
-
-/** 「今天多了 +N 个」/「最近 N 天多了 +N 个」——按快照间隔取说法，不把区间累计说成日均 */
+/** 「今天多了 +N 个」/「最近 N 天多了 +N 个」 */
 function deltaPhrase(delta: number, gapDays: number, isToday: boolean) {
   if (gapDays > 1) {
     return (
@@ -77,54 +78,58 @@ function deltaPhrase(delta: number, gapDays: number, isToday: boolean) {
 }
 
 /* ==================================================
-   KPI 报表格
+   KPI 卡
    ================================================== */
-function KpiCell({
-  sub,
+function KpiCard({
   label,
+  sub,
+  unit,
   value,
   daily,
   week,
-  flatNote,
+  note,
 }: {
-  sub: string;
   label: string;
+  sub: string;
+  unit?: string;
   value: number;
   daily: number | null;
   week?: number | null;
-  flatNote?: string;
+  note?: string;
 }) {
   const shown = useCountUp(value);
-  const isFlat = daily == null || (flatNote != null && daily === 0);
+  const flat = daily == null;
 
   return (
-    <div className="obs-kpi">
-      <p className="k-label">
-        <span>{label}</span>
-        <span className="en">{sub}</span>
+    <article className="obs-card obs-kpi">
+      <p className="k-lbl">
+        {label}
+        <span>{sub}</span>
       </p>
-      <p className="k-num">{fmt(shown)}</p>
-      {isFlat ? (
-        <p className="k-delta is-flat">{flatNote ?? '待采集'}</p>
+      <p className="k-big">
+        {fmt(shown)}
+        {unit ? <span className="k-unit">{unit}</span> : null}
+      </p>
+      {flat ? (
+        <p className="k-delta is-flat">{note ?? '待采集'}</p>
       ) : (
         <p className="k-delta">
           {fmtSigned(daily)}
           <span>
-            {' '}/ 日
-            {week != null ? ` · 7日 ${fmtSigned(week)}` : ''}
+            {' '}/ 日{week != null ? ` · 7日 ${fmtSigned(week)}` : ''}
           </span>
         </p>
       )}
-    </div>
+    </article>
   );
 }
 
 /* ==================================================
-   折线：粉丝增长
+   曲线：粉丝增长
    ================================================== */
 const CHART_W = 760;
-const CHART_H = 250;
-const PAD = { l: 44, r: 8, t: 26, b: 34 };
+const CHART_H = 230;
+const PAD = { l: 44, r: 10, t: 18, b: 28 };
 
 interface Pt {
   x: number;
@@ -164,8 +169,13 @@ function smoothPath(pts: Pt[]): string {
   return d;
 }
 
-function GrowthChart({ stats }: { stats: BiliStats }) {
-  const [range, setRange] = useState<30 | 90>(90);
+function GrowthChart({
+  stats,
+  range,
+}: {
+  stats: BiliStats;
+  range: 30 | 90;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const lineRef = useRef<SVGPathElement>(null);
   const areaRef = useRef<SVGPathElement>(null);
@@ -181,33 +191,17 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
     [line, pts],
   );
 
-  // 区间摘要：起点 / 最新 / 区间增幅 / 最大单日
   const summary = useMemo(() => {
     if (pts.length < 2) return null;
     const first = pts[0];
     const last = pts[pts.length - 1];
     let maxDaily = 0;
-    let peakIdx = 1;
     for (let i = 1; i < pts.length; i++) {
-      const dv = pts[i].followers - pts[i - 1].followers;
-      if (dv > maxDaily) {
-        maxDaily = dv;
-        peakIdx = i;
-      }
+      maxDaily = Math.max(maxDaily, pts[i].followers - pts[i - 1].followers);
     }
-    const avg = (last.followers - first.followers) / (pts.length - 1);
-    return {
-      first,
-      last,
-      gain: last.followers - first.followers,
-      maxDaily,
-      peakIdx,
-      // 单日峰值明显高于平均才值得批注
-      burst: maxDaily > Math.max(avg * 1.8, 60),
-    };
+    return { first, last, gain: last.followers - first.followers, maxDaily };
   }, [pts]);
 
-  // 折线描边动画
   useEffect(() => {
     const path = lineRef.current;
     if (!path) return;
@@ -216,15 +210,28 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
     tl.fromTo(
       path,
       { strokeDasharray: len, strokeDashoffset: len },
-      { strokeDashoffset: 0, duration: 1.5, ease: 'power2.out' },
+      { strokeDashoffset: 0, duration: 1.4, ease: 'power2.out' },
     );
     if (areaRef.current) {
-      tl.fromTo(areaRef.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.9 }, 0.35);
+      tl.fromTo(areaRef.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.9 }, 0.3);
     }
     return () => {
       tl.kill();
     };
   }, [line]);
+
+  const ticks = useMemo(() => {
+    if (!data.length) return [];
+    const values = data.map((d) => d.followers);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const ih = CHART_H - PAD.t - PAD.b;
+    return [0, 1, 2, 3].map((k) => {
+      const v = Math.round(max - (k / 3) * span);
+      return { y: PAD.t + (k / 3) * ih, text: `${(v / 10000).toFixed(1)}万` };
+    });
+  }, [data]);
 
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (pts.length < 2) return;
@@ -245,48 +252,11 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
   const hp = hover != null ? pts[hover] : null;
   const hpPrev = hover != null && hover > 0 ? pts[hover - 1] : null;
 
-  // 坐标轴刻度值
-  const ticks = useMemo(() => {
-    if (!data.length) return [];
-    const values = data.map((d) => d.followers);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = max - min || 1;
-    const ih = CHART_H - PAD.t - PAD.b;
-    return [0, 1, 2, 3].map((k) => {
-      const v = Math.round(max - (k / 3) * span);
-      return {
-        y: PAD.t + (k / 3) * ih,
-        text: v >= 10000 ? `${(v / 10000).toFixed(1)}万` : String(v),
-      };
-    });
-  }, [data]);
-
-  // 表格：区间末 8 天
-  const rows = useMemo(() => {
-    if (pts.length < 2) return [];
-    return pts
-      .slice(-8)
-      .map((p, i, arr) => {
-        const idx = pts.length - arr.length + i;
-        return { date: p.date, followers: p.followers, delta: idx > 0 ? p.followers - pts[idx - 1].followers : null };
-      })
-      .reverse();
-  }, [pts]);
-
   return (
-    <section>
-      <div className="obs-kicker">
-        <span className="idx">01</span>
+    <article className="obs-card obs-pad">
+      <div className="obs-card-head">
         <h3>粉丝增长</h3>
-        <span className="ln" />
-        <div className="obs-range" role="group" aria-label="时间区间">
-          {([30, 90] as const).map((r) => (
-            <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>
-              {r === 30 ? '30 日' : '全部'}
-            </button>
-          ))}
-        </div>
+        <span className="obs-hint">悬停看单日</span>
       </div>
 
       <div className="obs-chart">
@@ -299,8 +269,8 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
         >
           <defs>
             <linearGradient id="obs-area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ff8fab" stopOpacity="0.26" />
-              <stop offset="100%" stopColor="#ff8fab" stopOpacity="0" />
+              <stop offset="0%" stopColor="#b7a6ee" stopOpacity="0.38" />
+              <stop offset="100%" stopColor="#b7a6ee" stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -311,17 +281,16 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
                 y1={t.y}
                 x2={CHART_W - PAD.r}
                 y2={t.y}
-                stroke="rgba(43,29,36,.09)"
-                strokeDasharray={k === 3 ? '0' : '2 5'}
+                stroke="rgba(38,28,58,.07)"
+                strokeDasharray={k === 3 ? '0' : '2 6'}
               />
               <text
-                x={PAD.l - 8}
+                x={PAD.l - 10}
                 y={t.y + 3.5}
                 textAnchor="end"
-                fill="#a08a80"
+                fill="#b6b2c4"
                 fontSize="9.5"
                 fontFamily="ui-monospace,Consolas,monospace"
-                letterSpacing=".04em"
               >
                 {t.text}
               </text>
@@ -334,96 +303,56 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
               ref={lineRef}
               d={line}
               fill="none"
-              stroke="#b76e79"
-              strokeWidth="1.8"
+              stroke="#241f2e"
+              strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           )}
 
-          {/* 爆发日批注 */}
-          {summary?.burst && pts[summary.peakIdx] && (
-            <g>
-              <line
-                x1={pts[summary.peakIdx].x}
-                y1={pts[summary.peakIdx].y + 8}
-                x2={pts[summary.peakIdx].x}
-                y2={CHART_H - PAD.b}
-                stroke="rgba(43,29,36,.34)"
-                strokeDasharray="3 4"
-              />
-              <circle
-                cx={pts[summary.peakIdx].x}
-                cy={pts[summary.peakIdx].y}
-                r="3"
-                fill="#fdf6ef"
-                stroke="#b76e79"
-                strokeWidth="1.5"
-              />
-              <text
-                x={Math.min(pts[summary.peakIdx].x + 8, CHART_W - 70)}
-                y={pts[summary.peakIdx].y - 10}
-                fill="#b76e79"
-                fontSize="9.5"
-                fontFamily="ui-monospace,Consolas,monospace"
-                letterSpacing=".1em"
-              >
-                {mdShort(pts[summary.peakIdx].date)} 爆发日
-              </text>
-            </g>
-          )}
-
-          {/* 末端点 */}
+          {/* 末端点：青柠 */}
           {pts.length > 1 && (
             <g>
-              <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="8" fill="rgba(255,143,171,.22)" />
+              <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="9" fill="rgba(217,242,124,.55)" />
               <circle
                 cx={pts[pts.length - 1].x}
                 cy={pts[pts.length - 1].y}
-                r="3.4"
-                fill="#b76e79"
-                stroke="#fdf6ef"
-                strokeWidth="1.6"
+                r="4.2"
+                fill="#c8e85c"
+                stroke="#fdfcff"
+                strokeWidth="2"
               />
             </g>
           )}
 
-          {/* 悬停十字线 */}
+          {/* 悬停 */}
           {hp && (
             <g pointerEvents="none">
               <line
                 x1={hp.x}
-                y1={PAD.t - 12}
+                y1={PAD.t - 6}
                 x2={hp.x}
                 y2={CHART_H - PAD.b}
-                stroke="rgba(43,29,36,.3)"
-                strokeDasharray="2 3"
+                stroke="rgba(38,28,58,.22)"
+                strokeDasharray="2 4"
               />
-              <circle cx={hp.x} cy={hp.y} r="4" fill="#ff8fab" stroke="#fdf6ef" strokeWidth="2" />
+              <circle cx={hp.x} cy={hp.y} r="4" fill="#241f2e" stroke="#fdfcff" strokeWidth="2" />
             </g>
           )}
 
-          {/* x 轴日期 */}
+          {/* x 轴 */}
           {pts.length > 1 && (
             <>
-              <text
-                x={pts[0].x}
-                y={CHART_H - 12}
-                fill="#a08a80"
-                fontSize="9.5"
-                fontFamily="ui-monospace,Consolas,monospace"
-                letterSpacing=".08em"
-              >
+              <text x={pts[0].x} y={CHART_H - 8} fill="#b6b2c4" fontSize="9.5" fontFamily="ui-monospace,Consolas,monospace">
                 {mdShort(pts[0].date)}
               </text>
               <text
                 x={pts[pts.length - 1].x}
-                y={CHART_H - 12}
+                y={CHART_H - 8}
                 textAnchor="end"
-                fill="#a08a80"
+                fill="#b6b2c4"
                 fontSize="9.5"
                 fontFamily="ui-monospace,Consolas,monospace"
-                letterSpacing=".08em"
               >
                 {mdShort(pts[pts.length - 1].date)}
               </text>
@@ -435,9 +364,9 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
           <div
             className="obs-tip"
             style={{
-              left: `${Math.min(92, Math.max(8, (hp.x / CHART_W) * 100))}%`,
+              left: `${Math.min(90, Math.max(10, (hp.x / CHART_W) * 100))}%`,
               top: `${(hp.y / CHART_H) * 100}%`,
-              marginTop: '-12px',
+              marginTop: '-14px',
             }}
           >
             <span className="d">{mdShort(hp.date)}</span>
@@ -448,7 +377,7 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
       </div>
 
       {summary && (
-        <div className="obs-chart-foot">
+        <div className="obs-foot">
           <span>
             起点 <b>{fmt(summary.first.followers)}</b>
           </span>
@@ -459,35 +388,11 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
             区间增幅 <b className="is-up">{fmtSigned(summary.gain)}</b>
           </span>
           <span>
-            最大单日 <b>{fmtSigned(summary.maxDaily)}</b>
+            最大单日 <b>+{fmt(summary.maxDaily)}</b>
           </span>
         </div>
       )}
-
-      {rows.length > 0 && (
-        <details className="obs-details">
-          <summary>以表格查看</summary>
-          <table>
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>粉丝</th>
-                <th>日增</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.date}>
-                  <td>{mdShort(r.date)}</td>
-                  <td>{fmt(r.followers)}</td>
-                  <td className="is-up">{r.delta == null ? '—' : fmtSigned(r.delta)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-      )}
-    </section>
+    </article>
   );
 }
 
@@ -495,18 +400,16 @@ function GrowthChart({ stats }: { stats: BiliStats }) {
    热力：每日净涨粉
    ================================================== */
 const HEAT_COLORS = [
-  'rgba(183,110,121,.08)',
-  'rgba(183,110,121,.22)',
-  'rgba(183,110,121,.40)',
-  'rgba(183,110,121,.62)',
-  'rgba(183,110,121,.86)',
+  'rgba(139,116,216,.08)',
+  'rgba(139,116,216,.24)',
+  'rgba(139,116,216,.42)',
+  'rgba(139,116,216,.64)',
+  'rgba(139,116,216,.9)',
 ];
-const HEAT_CELLS = 13 * 7;
 
-function Heatmap({ stats }: { stats: BiliStats }) {
+function HeatCard({ stats }: { stats: BiliStats }) {
   const { cells, recorded, rows } = useMemo(() => {
-    const deltas = dailyDeltas(stats.snapshots).slice(-HEAT_CELLS);
-    // 分档按当天涨粉在样本里的分位取，避免极值把整片格子压成同一个颜色
+    const deltas = dailyDeltas(stats.snapshots);
     const sorted = deltas.map((d) => Math.max(0, d.delta)).sort((a, b) => a - b);
     const q = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(p * (sorted.length - 1)))] ?? 0;
     const [t1, t2, t3, t4] = [q(0.15), q(0.4), q(0.65), q(0.85)];
@@ -520,24 +423,43 @@ function Heatmap({ stats }: { stats: BiliStats }) {
     return { cells: list, recorded: deltas.length, rows: Math.max(1, list.length / 13) };
   }, [stats]);
 
+  // 一句话观察：峰值之后涨速是之前的几倍
+  const observation = useMemo(() => {
+    const snaps = stats.snapshots;
+    if (snaps.length < 3) return null;
+    const deltas = dailyDeltas(snaps);
+    const peak = peakOf(deltas);
+    const peakIdx = deltas.findIndex((d) => d.date === peak.date);
+    if (peakIdx < 0) return null;
+    const peakAt = snaps[peakIdx + 1];
+    const beforeN = Math.min(peakIdx + 1, 10);
+    const before = beforeN > 0 ? (peakAt.followers - snaps[peakIdx + 1 - beforeN].followers) / beforeN : 0;
+    const afterN = deltas.length - 1 - peakIdx;
+    const after = afterN > 0 ? (snaps[snaps.length - 1].followers - peakAt.followers) / afterN : 0;
+    return {
+      peakDate: peak.date,
+      after: Math.round(after),
+      ratio: before > 0 ? after / before : 0,
+    };
+  }, [stats]);
+
   return (
-    <aside className="obs-col-r">
-      <div className="obs-kicker">
-        <span className="idx">02</span>
+    <article className="obs-card obs-pad">
+      <div className="obs-card-head">
         <h3>涨粉热力</h3>
-        <span className="ln" />
+        <span className="obs-hint">已记录 {recorded} 天</span>
       </div>
 
       <div
         className="obs-heat"
         role="img"
         aria-label="每日净涨粉热力图"
-        style={{ gridTemplateRows: `repeat(${rows}, 1fr)`, aspectRatio: `13 / ${rows}` }}
+        style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
       >
         {cells.map((c, i) => (
           <i
             key={c?.date ?? `empty-${i}`}
-            style={{ background: c ? HEAT_COLORS[c.level] : 'rgba(43,29,36,.045)' }}
+            style={{ background: c ? HEAT_COLORS[c.level] : 'rgba(38,28,58,.045)' }}
             title={c ? `${mdShort(c.date)} · ${fmtSigned(c.delta)}` : '尚未记录'}
           />
         ))}
@@ -549,68 +471,25 @@ function Heatmap({ stats }: { stats: BiliStats }) {
           <i key={c} style={{ background: c }} />
         ))}
         <span>多</span>
-        <span className="count">已记录 {recorded} 天</span>
       </div>
-    </aside>
-  );
-}
 
-/* ==================================================
-   观测便签
-   ================================================== */
-function Note({ stats }: { stats: BiliStats }) {
-  const text = useMemo(() => {
-    const snaps = stats.snapshots;
-    if (snaps.length < 2) return null;
-    const first = snaps[0];
-    const last = snaps[snaps.length - 1];
-    const deltas = dailyDeltas(snaps);
-    const peak = peakOf(deltas);
-    const peakIdx = deltas.findIndex((d) => d.date === peak.date);
-    const gain = last.followers - first.followers;
-
-    // 峰值前 10 天 vs 峰值后到今天的日均
-    const peakAt = peakIdx >= 0 ? snaps[peakIdx + 1] : last;
-    const beforeN = Math.min(peakIdx + 1, 10);
-    const beforeAvg =
-      beforeN > 0
-        ? (peakAt.followers - snaps[peakIdx + 1 - beforeN].followers) / beforeN
-        : 0;
-    const afterN = deltas.length - 1 - peakIdx;
-    const afterAvg = afterN > 0 ? (last.followers - peakAt.followers) / afterN : 0;
-    const ratio = beforeAvg > 0 ? afterAvg / beforeAvg : 0;
-
-    return {
-      first: first.date,
-      gain,
-      peakDate: peak.date,
-      peakDelta: peak.delta,
-      ratio,
-      afterAvg: Math.round(afterAvg),
-    };
-  }, [stats]);
-
-  if (!text) return null;
-
-  return (
-    <div className="obs-note">
-      {mdCN(text.first)}到现在，
-      <br />
-      一共多了 <b>{fmtSigned(text.gain)}</b> 个粉丝。
-      <br />
-      {text.ratio >= 1.15 ? (
-        <>{mdCN(text.peakDate)}那条之后，日均涨粉是之前的 <b>{text.ratio.toFixed(1)}</b> 倍。</>
-      ) : text.ratio >= 0.95 ? (
-        <>
-          涨速稳住了，日均 <b>{fmtSigned(text.afterAvg)}</b>，慢慢涨潮。
-        </>
-      ) : (
-        <>
-          热度回落了一些，日均仍有 <b>{fmtSigned(text.afterAvg)}</b>。
-        </>
+      {observation && (
+        <p className="obs-note-line">
+          <span className="bullet" />
+          <span>
+            {observation.ratio >= 1.15 ? (
+              <>
+                {mdCN(observation.peakDate)}之后，日均涨粉是之前的 <b>{observation.ratio.toFixed(1)}</b> 倍。
+              </>
+            ) : (
+              <>
+                最近日均 <b>{fmtSigned(observation.after)}</b>，慢慢涨潮。
+              </>
+            )}
+          </span>
+        </p>
       )}
-      <span className="sign">—— 观测记录 · 小安</span>
-    </div>
+    </article>
   );
 }
 
@@ -621,53 +500,43 @@ interface TopItem {
   id: string;
   title: string;
   plays: number;
-  likes: number;
-  coins: number;
 }
 
 function TopClips() {
   const liveVideos = useBiliVideos();
 
-  // 有真实视频时用真实数据；接口失败时回退静态曲库，保证板块不空白
   const top = useMemo<TopItem[]>(() => {
     const src: TopItem[] = liveVideos.length
-      ? liveVideos.map((v) => ({ id: v.bvid, title: v.title, plays: v.plays, likes: v.likes, coins: v.coins }))
-      : songs.map((s) => ({ id: s.id, title: s.title, plays: s.plays, likes: s.likes, coins: s.coins }));
+      ? liveVideos.map((v) => ({ id: v.bvid, title: v.title, plays: v.plays }))
+      : songs.map((s) => ({ id: s.id, title: s.title, plays: s.plays }));
     return [...src].sort((a, b) => b.plays - a.plays).slice(0, 5);
   }, [liveVideos]);
 
-  const max = Math.max(1, ...top.map((t) => t.plays));
-  // 采集器没有点赞/投币时，不摆一排「0 赞 · 0 投币」，改用整行比例条
-  const hasReactions = top.some((t) => t.likes > 0 || t.coins > 0);
   if (!top.length) return null;
+  const max = Math.max(1, ...top.map((t) => t.plays));
 
   return (
-    <section className="mt-[clamp(2rem,4.4vw,3.25rem)]">
-      <div className="obs-kicker">
-        <span className="idx">03</span>
+    <section>
+      <div className="obs-section-head">
         <h3>播放最高的视频</h3>
-        <span className="ln" />
-        <span style={{ fontFamily: 'ui-monospace,Consolas,monospace', fontSize: '0.594rem', letterSpacing: '.14em', color: 'var(--muted)' }}>
-          TOP 5 / 播放
-        </span>
+        <span className="obs-hint">TOP 5 / 播放</span>
       </div>
 
       <ol className="obs-tops">
         {top.map((t, i) => (
-          <li key={t.id} className="obs-top">
-            <span className="i">{String(i + 1).padStart(2, '0')}</span>
+          <li key={t.id} className="obs-card obs-clip">
+            {i === 0 && <span className="badge">TOP 1</span>}
+            <span className="rank">{String(i + 1).padStart(2, '0')}</span>
             <p className="t" title={t.title}>
               {t.title}
             </p>
+            <p className="p">
+              {fmt(t.plays)}
+              <span className="u">播放</span>
+            </p>
             <span className="bar">
-              <i style={{ '--w': (t.plays / max).toFixed(3) } as React.CSSProperties} />
+              <i style={{ width: `${((t.plays / max) * 100).toFixed(1)}%` }} />
             </span>
-            <span className="v">{fmt(t.plays)} 播放</span>
-            {hasReactions && (
-              <span className="m">
-                {fmt(t.likes)} 赞 · {fmt(t.coins)} 投币
-              </span>
-            )}
           </li>
         ))}
       </ol>
@@ -681,26 +550,22 @@ function TopClips() {
 export default function Observatory() {
   const stats = useBiliStats();
   const rootRef = useRef<HTMLElement>(null);
+  const [range, setRange] = useState<30 | 90>(90);
 
-  // 标题下方的叙述：用真实数据拼一句人话
   const intro = useMemo(() => {
     const snaps = stats.snapshots;
     if (snaps.length < 2) return null;
     const first = snaps[0];
     const last = snaps[snaps.length - 1];
-    const day = spanDays(first.date, last.date);
-    const recent = dailyDeltas(snaps.slice(-31));
-    const peak = peakOf(recent);
     const prev = snaps[snaps.length - 2];
+    const day = spanDays(first.date, last.date);
+    const peak = peakOf(dailyDeltas(snaps.slice(-31)));
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-
-    // 实时接口覆盖过「今天」时，最新一点其实就是此刻；否则用快照日期
     const currentDate = stats.live ? todayIso : last.date;
 
-    // 最新一点相对上一条：涨了多少、隔了几天
     const lastDelta = last.followers - prev.followers;
     const gapDays = Math.max(1, spanDays(prev.date, currentDate) - 1);
 
@@ -714,28 +579,24 @@ export default function Observatory() {
       gapDays,
       isToday: currentDate === todayIso,
       gain: last.followers - first.followers,
-      firstDate: first.date,
     };
   }, [stats]);
 
   const viewsCaptured = lastCapturedDate(stats.snapshots, 'views');
   const likesCaptured = lastCapturedDate(stats.snapshots, 'likes');
-
-  const metaRight = stats.live ? 'LIVE · 每小时同步' : `快照 · ${mdShort(stats.updated.slice(0, 10))}`;
-  const snapshotCount = stats.snapshots.length;
-  const firstDate = stats.snapshots[0]?.date ?? '';
+  const no = String(stats.snapshots.length).padStart(3, '0');
 
   useGSAP(
     () => {
       const items = rootRef.current?.querySelectorAll<HTMLElement>('.obs-rv');
       if (!items?.length) return;
       gsap.from(Array.from(items), {
-        y: 16,
+        y: 18,
         autoAlpha: 0,
         duration: 0.9,
         stagger: 0.08,
         ease: 'power2.out',
-        scrollTrigger: { trigger: rootRef.current, start: 'top 78%', once: true },
+        scrollTrigger: { trigger: rootRef.current, start: 'top 80%', once: true },
       });
     },
     { scope: rootRef },
@@ -744,107 +605,92 @@ export default function Observatory() {
   return (
     <section id="observatory" ref={rootRef} className="obs-page">
       <div className="obs-wrap">
-        {/* 页眉档案信息 */}
-        <div className="obs-meta obs-rv">
-          <div className="obs-meta-left">
-            <span>Source Observatory</span>
-            <span className="is-no">No.{String(snapshotCount).padStart(3, '0')}</span>
-            <span className="is-since">
-              · Snapshots since {firstDate.replace(/-/g, '.')}
-            </span>
+        {/* 舞台：标题 + 立绘 */}
+        <div className="obs-stage obs-rv">
+          <span className="obs-band" aria-hidden="true" />
+          <span className="obs-band is-soft" aria-hidden="true" />
+
+          <div className="obs-stage-copy">
+            <p className="obs-eyebrow">Source Observatory · No.{no}</p>
+            <h2 className="obs-title">
+              B站数据<b>观测舱</b>
+            </h2>
+            <p className="obs-lede">
+              {intro ? (
+                <>
+                  第 <b>{intro.day}</b> 天。
+                  {intro.peakDelta >= 100 && intro.peakDate && !intro.peakIsLatest ? (
+                    <>
+                      {mdCN(intro.peakDate)}那一波之后曲线没再落回去 —— 现在是{' '}
+                      <b>{formatNum(intro.followers)}</b>
+                      {deltaPhrase(intro.lastDelta, intro.gapDays, intro.isToday)}
+                    </>
+                  ) : (
+                    <>
+                      从 {fmt(stats.snapshots[0]?.followers ?? 0)} 走到 {formatNum(intro.followers)}，一共多了{' '}
+                      <b>{fmtSigned(intro.gain)}</b> 个。
+                    </>
+                  )}
+                </>
+              ) : (
+                <>正在读取每日快照……</>
+              )}
+            </p>
+
+            <div className="obs-pills">
+              <span className={`obs-pill${stats.live ? ' is-lime' : ''}`}>
+                <i className="dot" />
+                {stats.live ? 'LIVE · 每小时同步' : `快照 · ${mdShort(stats.updated.slice(0, 10))}`}
+              </span>
+              <div className="obs-seg" role="group" aria-label="时间区间">
+                {([30, 90] as const).map((r) => (
+                  <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>
+                    {r === 30 ? '30 日' : '全部'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <span className="obs-live">
-            <i />
-            {metaRight}
-          </span>
+
+          <img className="obs-figure" src={asset('/images/heroine-wave.png')} alt="水聖安 Q 版立绘" />
         </div>
-        <div className="obs-rule" />
 
-        {/* 标题区 */}
-        <header className="obs-head obs-rv">
-          <h2>
-            B站数据
-            <em>
-              观测舱
-              <svg viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M2 8.2C22 3.6 40 3.1 58 5.4c17 2.2 33 3.6 60 .6" pathLength="1" />
-              </svg>
-            </em>
-          </h2>
-          <p>
-            {intro ? (
-              <>
-                第 <b>{intro.day}</b> 天。
-                {intro.peakDelta >= 100 && intro.peakDate && !intro.peakIsLatest ? (
-                  <>
-                    {mdCN(intro.peakDate)}那一波之后，曲线还没落回去 —— 现在是{' '}
-                    <b>{formatNum(intro.followers)}</b>
-                    {deltaPhrase(intro.lastDelta, intro.gapDays, intro.isToday)}
-                  </>
-                ) : (
-                  <>
-                    从 {fmt(stats.snapshots[0]?.followers ?? 0)} 走到 {formatNum(intro.followers)}，一共多了{' '}
-                    <b>{fmtSigned(intro.gain)}</b> 个。
-                  </>
-                )}
-              </>
-            ) : (
-              <>正在读取每日快照……</>
-            )}
-          </p>
-        </header>
-
-        {/* KPI 报表条 */}
+        {/* KPI */}
         <section className="obs-kpis obs-rv" aria-label="核心数据">
-          <KpiCell
-            sub="FANS"
+          <KpiCard
             label="粉丝"
+            sub="FANS"
+            unit="人"
             value={stats.latest.followers}
             daily={stats.daily.followers}
             week={stats.rate7}
           />
-          <KpiCell
-            sub="VIEWS"
+          <KpiCard
             label="播放"
+            sub="VIEWS"
             value={stats.latest.views}
             daily={stats.daily.views}
-            flatNote={viewsCaptured ? `${mdShort(viewsCaptured)} 采集` : '待采集'}
+            note={viewsCaptured ? `${mdShort(viewsCaptured)} 采集` : '待采集'}
           />
-          <KpiCell
-            sub="LIKES"
+          <KpiCard
             label="获赞"
+            sub="LIKES"
             value={stats.latest.likes}
             daily={stats.daily.likes}
-            flatNote={likesCaptured ? `${mdShort(likesCaptured)} 采集` : '待采集'}
+            note={likesCaptured ? `${mdShort(likesCaptured)} 采集` : '待采集'}
           />
-          <KpiCell
-            sub="WORKS"
-            label="稿件"
-            value={stats.latest.videos}
-            daily={stats.daily.videos}
-            flatNote="近期未更新"
-          />
+          <KpiCard label="稿件" sub="WORKS" unit="条" value={stats.latest.videos} daily={stats.daily.videos} note="近期未更新" />
         </section>
 
-        {/* 主体两栏 */}
+        {/* 曲线 + 热力 */}
         <div className="obs-main obs-rv">
-          <GrowthChart stats={stats} />
-          <div>
-            <Heatmap stats={stats} />
-            <Note stats={stats} />
-          </div>
+          <GrowthChart stats={stats} range={range} />
+          <HeatCard stats={stats} />
         </div>
 
+        {/* TOP 5 */}
         <div className="obs-rv">
           <TopClips />
-        </div>
-
-        {/* 脚注 */}
-        <div className="obs-foot">
-          <span>数据来自 B站公开接口的每日快照 · 仅供参考</span>
-          <span>
-            Last sync {stats.updated.slice(0, 10).replace(/-/g, '.')} {stats.updated.slice(11, 16)}
-          </span>
         </div>
       </div>
     </section>
