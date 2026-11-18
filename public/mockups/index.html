@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>B站数据观测舱 · 3 版 UI 方案审核</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+:root{
+  --bg:#fbf5ee;
+  --ink:#241322;
+  --soft:#5f4b52;
+  --muted:#8b6f63;
+  --rose:#b76e79;
+  --pink:#ff8fab;
+  --line:rgba(36,19,34,.14);
+  --font-display:'ZCOOL QingKe HuangYou','Yuanti SC',YouYuan,'Microsoft YaHei',sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin-inline:auto;padding:clamp(36px,5vw,64px) clamp(16px,4vw,40px) 80px}
+
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--rose)}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(1.9rem,3.6vw,2.7rem);line-height:1.15;margin-top:8px}
+h1 span{color:var(--rose)}
+.top p{font-size:13px;color:var(--muted);max-width:36ch;padding-bottom:4px}
+.top p b{color:var(--soft)}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,26px);margin-top:clamp(24px,3vw,36px)}
+.card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s}
+.card:hover{transform:translateY(-3px);box-shadow:0 26px 50px -34px rgba(129,87,75,.9)}
+.thumb{position:relative;aspect-ratio:4/3;overflow:hidden;border-bottom:1px solid var(--line);background:#f2ece6}
+.thumb iframe{position:absolute;top:0;left:0;width:1440px;height:1080px;border:0;transform-origin:top left;pointer-events:none}
+.thumb a{position:absolute;inset:0;z-index:2;display:flex;align-items:flex-end;justify-content:flex-end;padding:10px;text-decoration:none}
+.thumb a span{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;background:rgba(36,19,34,.86);color:#fff;border-radius:999px;padding:6px 12px;opacity:0;transform:translateY(6px);transition:.35s}
+.card:hover .thumb a span{opacity:1;transform:none}
+
+.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:9px;flex:1}
+.no{display:flex;align-items:baseline;gap:8px}
+.no b{font-family:var(--font-mono);font-size:22px;line-height:1;color:rgba(183,110,121,.42);letter-spacing:-.03em}
+.no h2{font-size:16px;font-weight:800;letter-spacing:.01em}
+.no em{font-style:normal;font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--muted);margin-left:auto}
+.desc{font-size:12.5px;color:var(--soft);line-height:1.75}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;margin-top:2px}
+dt{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--rose);padding-top:2px}
+dd{color:var(--soft)}
+.sw{display:flex;gap:4px;margin-left:auto}
+.sw i{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.08)}
+
+.verdict{margin-top:clamp(30px,4vw,48px);border-top:1px solid var(--line);padding-top:22px}
+.verdict h3{font-family:var(--font-display);font-weight:400;font-size:20px}
+.verdict ul{list-style:none;margin-top:12px;display:grid;gap:9px}
+.verdict li{display:grid;grid-template-columns:78px 1fr;gap:14px;font-size:12.5px;color:var(--soft);padding-bottom:9px;border-bottom:1px dashed rgba(36,19,34,.08)}
+.verdict li b{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;color:var(--rose);padding-top:3px}
+.foot{margin-top:22px;font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+
+@media (max-width:1000px){.cards{grid-template-columns:1fr 1fr}}
+@media (max-width:680px){.cards{grid-template-columns:1fr}.thumb{aspect-ratio:16/10}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="top">
+    <div>
+      <p class="eyebrow">Design Review · 3 Options</p>
+      <h1>B站数据<span>观测舱</span> · 改版方案</h1>
+    </div>
+    <p>三版都用同一份真实数据（<b>209,428</b> 粉丝 / 53 天快照）。点缩略图看完整页面，或直接说“就要第几版”。</p>
+  </div>
+
+  <div class="cards">
+
+    <article class="card">
+      <div class="thumb">
+        <iframe src="v1-editorial.html" title="V1 观测手记" loading="lazy"></iframe>
+        <a href="v1-editorial.html" target="_blank" rel="noopener"><span>打开完整页面 ↗</span></a>
+      </div>
+      <div class="body">
+        <div class="no"><b>01</b><h2>观测手记</h2><em>EDITORIAL</em></div>
+        <p class="desc">把它当作一份纸质观测报告：发丝线分栏、报表式大数字、几乎不用卡片。最贴站点现在的奶油纸张气质。</p>
+        <dl>
+          <dt>气质</dt><dd>安静 · 纸质 · 有编辑感</dd>
+          <dt>色板</dt><dd><span class="sw"><i style="background:#fdf6ef"></i><i style="background:#2b1d24"></i><i style="background:#b76e79"></i><i style="background:#ff8fab"></i></span></dd>
+          <dt>签名</dt><dd>手绘粉下划线 + 旋转便签 + 10/17 爆发日批注</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="thumb">
+        <iframe src="v2-bento.html" title="V2 粉彩 Bento" loading="lazy"></iframe>
+        <a href="v2-bento.html" target="_blank" rel="noopener"><span>打开完整页面 ↗</span></a>
+      </div>
+      <div class="body">
+        <div class="no"><b>02</b><h2>粉彩 Bento</h2><em>BENTO</em></div>
+        <p class="desc">大小不等的格子直接承载层级，圆角和卡片跟站内其他区块同族，最“顺”的一版，也最容易接进现有组件。</p>
+        <dl>
+          <dt>气质</dt><dd>柔软 · 通透 · 有秩序</dd>
+          <dt>色板</dt><dd><span class="sw"><i style="background:#fdf8f3"></i><i style="background:#ff8fab"></i><i style="background:#c9b6ec"></i><i style="background:#aecbf4"></i></span></dd>
+          <dt>签名</dt><dd>鼠标柔光斑 + 53 天潮汐微柱 + 巨型数字</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="thumb">
+        <iframe src="v3-cockpit.html" title="V3 夜间观测舱" loading="lazy"></iframe>
+        <a href="v3-cockpit.html" target="_blank" rel="noopener"><span>打开完整页面 ↗</span></a>
+      </div>
+      <div class="body">
+        <div class="no"><b>03</b><h2>夜间观测舱 2.0</h2><em>COCKPIT</em></div>
+        <p class="desc">保留深色，但把酒红底和粉网格全部拿掉：中性近黑、发丝线、单一珊瑚强调色，左侧加仪表。</p>
+        <dl>
+          <dt>气质</dt><dd>冷静 · 精密 · 夜间值班室</dd>
+          <dt>色板</dt><dd><span class="sw"><i style="background:#0d0b10"></i><i style="background:#16131c"></i><i style="background:#ff8095"></i><i style="background:#7fd8b0"></i></span></dd>
+          <dt>签名</dt><dd>7 日目标刻度仪表 + 顶部光带 + 极淡扫描线</dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="verdict">
+    <h3>三版分别在解决什么</h3>
+    <ul>
+      <li><b>现在的问题</b><span>深紫底 + 粉网格 + 发光 pill，跟全站奶油纸张完全不一个语系；四张等宽卡片把主次压平了；曲线图被挤在 4 栏宽度里，读不出“涨”这件事。</span></li>
+      <li><b>01 修的是</b><span>语系不一致。全部换成站点自己的纸、墨、玫瑰灰，靠线、留白和字号层级做秩序 —— 最不像“数据面板”，最像这个站。</span></li>
+      <li><b>02 修的是</b><span>主次不清。粉丝数占最大的格，其余按重要性分大小，一眼就知道先看什么；改动成本最低，组件可直接复用。</span></li>
+      <li><b>03 修的是</b><span>如果能接受深色也值得改。把配色从“酒红 + 霓虹粉”换成中性黑 + 单一珊瑚，去掉网格纹理和发光，改成仪表读数。</span></li>
+    </ul>
+  </div>
+
+  <p class="foot">数据窗口 2026.09.01 → 2026.10.31 · 53 条快照 · 仅供方案审核</p>
+</main>
+
+<script>
+function fit(){
+  document.querySelectorAll(".thumb").forEach(t=>{
+    const f=t.querySelector("iframe");
+    if(!f) return;
+    const s=t.clientWidth/1440;
+    f.style.transform=`scale(${s})`;
+    f.style.height=(t.clientHeight/s)+"px";
+  });
+}
+window.addEventListener("resize",fit);
+window.addEventListener("load",fit);
+fit();
+</script>
+</body>
+</html>

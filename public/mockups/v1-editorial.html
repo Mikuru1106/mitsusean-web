@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>V1 · 观测手记 — B站数据观测舱</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+/* ============================================================
+   DESIGN BRIEF · V1「观测手记」
+   气质：安静 · 纸质 · 有编辑感
+   字体：展示=站酷庆科黄油体 / 正文=系统无衬线 / 数字=等宽
+   色板：纸 #fdf6ef · 墨 #2b1d24 · 玫瑰灰 #b76e79 · 粉 #ff8fab（只给涨跌与批注）
+   布局：发丝线分栏的报表排版，不用浮起卡片，KPI 直接排在纸面上
+   签名：手绘粉下划线 + 旋转观测便签 + 10/17 爆发日批注
+   ============================================================ */
+:root{
+  --paper:#fdf6ef;
+  --paper-hi:#fffaf4;
+  --ink:#2b1d24;
+  --ink-soft:#5f4b52;
+  --muted:#8b6f63;
+  --rose:#b76e79;
+  --pink:#ff8fab;
+  --up:#c2606f;
+  --line:rgba(43,29,36,.16);
+  --line-soft:rgba(43,29,36,.09);
+  --font-display:'ZCOOL QingKe HuangYou','Yuanti SC',YouYuan,'Microsoft YaHei',sans-serif;
+  --font-ui:'General Sans',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Consolas,'Courier New',monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(255,143,171,.3);color:var(--ink)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+.wrap{
+  position:relative;
+  max-width:1140px;
+  margin-inline:auto;
+  padding:clamp(48px,7vw,96px) clamp(20px,5vw,48px) clamp(40px,6vw,80px);
+}
+/* 网点纸纹：只在标题区淡出，不铺满全页 */
+.wrap::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(183,110,121,.22) 1px,transparent 1px);
+  background-size:16px 16px;
+  -webkit-mask-image:radial-gradient(120% 60% at 20% 0%,#000 0%,transparent 72%);
+  mask-image:radial-gradient(120% 60% at 20% 0%,#000 0%,transparent 72%);
+  opacity:.5;
+}
+.wrap>*{position:relative;z-index:1}
+
+/* ---------- 页眉档案信息 ---------- */
+.meta{
+  display:flex;align-items:baseline;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;
+  padding-bottom:10px;
+  font-family:var(--font-mono);
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted);
+}
+.meta .left{display:flex;align-items:center;gap:10px}
+.meta .no{color:var(--rose)}
+.rule{height:3px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:clamp(24px,3.4vw,40px)}
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
+.live i{width:5px;height:5px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 0 rgba(255,143,171,.6);animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,143,171,.55)}70%{box-shadow:0 0 0 7px rgba(255,143,171,0)}100%{box-shadow:0 0 0 0 rgba(255,143,171,0)}}
+
+/* ---------- 标题区 ---------- */
+.head{display:grid;grid-template-columns:1.45fr 1fr;gap:clamp(24px,4vw,56px);align-items:end;margin-bottom:clamp(28px,4vw,44px)}
+h2{
+  font-family:var(--font-display);
+  font-weight:400;
+  font-size:clamp(2.3rem,4.4vw,3.7rem);
+  line-height:1.08;
+  letter-spacing:.01em;
+  text-wrap:balance;
+}
+h2 em{font-style:normal;color:var(--rose);position:relative;display:inline-block}
+h2 em svg{position:absolute;left:-.02em;right:-.02em;bottom:-.2em;width:calc(100% + .04em);height:.24em;overflow:visible}
+h2 em svg path{fill:none;stroke:var(--pink);stroke-width:3.2;stroke-linecap:round;stroke-dasharray:var(--len,300);stroke-dashoffset:var(--len,300);animation:draw 1.1s .35s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.head p{font-size:13.5px;line-height:1.85;color:var(--muted);max-width:30ch;justify-self:end;padding-bottom:.5em;border-bottom:1px solid var(--line-soft)}
+.head p b{color:var(--ink-soft);font-weight:600}
+
+/* ---------- KPI 报表条 ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.kpi{padding:18px 0 16px;padding-right:18px}
+.kpi+.kpi{border-left:1px solid var(--line-soft);padding-left:20px}
+.kpi .k-label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.kpi .k-num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:clamp(1.55rem,2.6vw,2.05rem);line-height:1.15;margin-top:6px;letter-spacing:-.02em}
+.kpi .k-num small{font-size:.5em;color:var(--muted);margin-left:2px;letter-spacing:0}
+.kpi .k-delta{margin-top:3px;font-size:11px;color:var(--up);font-weight:600;letter-spacing:.01em}
+.kpi .k-delta span{color:var(--muted);font-weight:400}
+
+/* ---------- 主体两栏 ---------- */
+.main{display:grid;grid-template-columns:1.58fr 1fr;gap:clamp(24px,3.4vw,44px);margin-top:clamp(32px,4.4vw,52px)}
+.col-r{border-left:1px solid var(--line-soft);padding-left:clamp(20px,2.6vw,32px)}
+
+/* ---------- 区块小标题 ---------- */
+.kicker{display:flex;align-items:center;gap:12px;margin-bottom:16px;min-height:22px}
+.kicker .idx{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--rose)}
+.kicker h3{font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+.kicker .ln{flex:1;height:1px;background:var(--line-soft)}
+.kicker .range{display:flex;gap:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em}
+.kicker .range button{
+  background:none;border:0;cursor:pointer;color:var(--muted);padding:2px 0;position:relative;
+  font-family:inherit;font-size:inherit;letter-spacing:inherit;transition:color .25s ease;
+}
+.kicker .range button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.kicker .range button:hover{color:var(--ink-soft)}
+.kicker .range button[aria-pressed="true"]{color:var(--ink)}
+.kicker .range button[aria-pressed="true"]::after{transform:scaleX(1)}
+
+/* ---------- 图表 ---------- */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible;cursor:crosshair}
+.tip{
+  position:absolute;z-index:4;pointer-events:none;transform:translate(-50%,0) rotate(-1.2deg);
+  background:var(--paper-hi);border:1px solid var(--ink);padding:7px 10px 8px;
+  box-shadow:3px 3px 0 rgba(43,29,36,.12);white-space:nowrap;
+  font-family:var(--font-mono);font-size:10.5px;line-height:1.5;color:var(--ink);
+  opacity:0;transition:opacity .16s ease;
+}
+.tip.on{opacity:1}
+.tip b{display:block;font-size:13px;letter-spacing:-.01em}
+.tip i{color:var(--up);font-style:normal}
+.chart-foot{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--muted)}
+.chart-foot b{color:var(--ink-soft);font-weight:600}
+details{margin-top:14px;border-top:1px dotted var(--line)}
+details summary{cursor:pointer;padding:9px 0;font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+ ";color:var(--rose)}
+details[open] summary::before{content:"− "}
+table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px;margin-bottom:8px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line-soft)}
+th{font-weight:500;color:var(--muted);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase}
+td:last-child,th:last-child{text-align:right}
+
+/* ---------- 热力 ---------- */
+.heat{display:grid;grid-template-columns:repeat(13,1fr);grid-template-rows:repeat(7,1fr);gap:3px;aspect-ratio:13/7;max-width:100%}
+.heat i{border-radius:2px;background:rgba(183,110,121,.1);transition:transform .2s var(--ease),box-shadow .2s ease}
+.heat i:hover{transform:scale(1.35);box-shadow:0 0 0 1px var(--ink);position:relative;z-index:2}
+.heat-legend{display:flex;align-items:center;gap:5px;margin-top:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--muted)}
+.heat-legend i{width:9px;height:9px;border-radius:2px}
+
+/* ---------- 便签 ---------- */
+.note{
+  position:relative;margin-top:26px;padding:16px 18px 15px;
+  background:var(--paper-hi);
+  border:1px dashed rgba(183,110,121,.5);
+  transform:rotate(-2.1deg);
+  font-size:12.5px;line-height:1.95;color:var(--ink-soft);
+  box-shadow:0 10px 22px -16px rgba(129,87,75,.6);
+}
+.note::before{ /* 胶带 */
+  content:"";position:absolute;top:-9px;left:50%;width:56px;height:16px;
+  transform:translateX(-50%) rotate(1.5deg);
+  background:rgba(255,143,171,.26);border:1px solid rgba(255,143,171,.4);
+}
+.note b{color:var(--rose);font-family:var(--font-mono);font-size:13.5px;letter-spacing:-.01em}
+.note .sign{display:block;margin-top:4px;text-align:right;font-size:10.5px;letter-spacing:.12em;color:var(--muted)}
+
+/* ---------- TOP 视频 ---------- */
+.tops{list-style:none;margin-top:4px}
+.top{
+  display:grid;grid-template-columns:34px minmax(0,1fr) 96px;
+  gap:3px 14px;align-items:baseline;
+  padding:10px 6px;border-bottom:1px solid var(--line-soft);
+  transition:background .3s ease,padding .3s ease;
+}
+.top:first-child{border-top:1px solid var(--line)}
+.top:hover{background:rgba(255,250,244,.9);padding-left:10px;padding-right:10px}
+.top .i{font-family:var(--font-mono);font-size:10px;color:var(--rose);letter-spacing:.08em}
+.top .t{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .25s}
+.top:hover .t{color:var(--rose)}
+.top .v{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);text-align:right}
+.top .m{grid-column:2/4;display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)}
+.top .bar{flex:none;width:72px;height:3px;background:var(--line-soft);position:relative;overflow:hidden}
+.top .bar i{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--rose);transform:scaleX(var(--w,0));transform-origin:left;transition:background .25s}
+.top:hover .bar i{background:var(--pink)}
+
+/* ---------- 脚注 ---------- */
+.foot{
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:clamp(28px,4vw,44px);padding-top:12px;border-top:1px dotted var(--line);
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+}
+
+/* 入场 */
+.rv{opacity:0;transform:translateY(14px);animation:rv .8s var(--ease) forwards}
+@keyframes rv{to{opacity:1;transform:none}}
+
+@media (max-width:720px){
+  .meta{flex-direction:column;align-items:flex-start;gap:7px;letter-spacing:.14em}
+  .meta .left span:nth-child(n+3){display:none}
+  .meta .left{gap:8px}
+  .meta .live{letter-spacing:.1em}
+}
+@media (max-width:860px){
+  .head{grid-template-columns:1fr;gap:18px}
+  .head p{justify-self:start;max-width:34ch}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi:nth-child(3){border-left:0;padding-left:0}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line-soft)}
+  .main{grid-template-columns:1fr;gap:34px}
+  .col-r{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:24px}
+  .top{grid-template-columns:28px minmax(0,1fr) 78px}
+  .heat{aspect-ratio:13/7}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="meta">
+    <div class="left">
+      <span>Source Observatory</span>
+      <span class="no">No.053</span>
+      <span>·</span>
+      <span>Snapshots since 2026.09.01</span>
+    </div>
+    <span class="live"><i></i>LIVE · 每小时同步</span>
+  </div>
+  <div class="rule"></div>
+
+  <header class="head">
+    <h2>B站数据<em>观测舱<svg viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8.2C22 3.6 40 3.1 58 5.4c17 2.2 33 3.6 60 .6" /></svg></em></h2>
+    <p>第 <b>61</b> 天。十月中旬那一波之后，曲线还没落回去 —— 现在是 <b>20.9 万</b>，每天多了四百来个人。</p>
+  </header>
+
+  <section class="kpis" aria-label="核心数据">
+    <div class="kpi">
+      <p class="k-label"><span>粉丝 FANS</span></p>
+      <p class="k-num" data-count="209428">209,428</p>
+      <p class="k-delta">+434 <span>/ 日 · 7日 +3,838</span></p>
+    </div>
+    <div class="kpi">
+      <p class="k-label"><span>播放 VIEWS</span></p>
+      <p class="k-num" data-count="1745000">1,745,000</p>
+      <p class="k-delta">+2,140 <span>/ 日</span></p>
+    </div>
+    <div class="kpi">
+      <p class="k-label"><span>获赞 LIKES</span></p>
+      <p class="k-num" data-count="104380">104,380</p>
+      <p class="k-delta">+128 <span>/ 日</span></p>
+    </div>
+    <div class="kpi">
+      <p class="k-label"><span>稿件 WORKS</span></p>
+      <p class="k-num" data-count="90">90</p>
+      <p class="k-delta" style="color:var(--muted);font-weight:400">近 30 天未更新</p>
+    </div>
+  </section>
+
+  <div class="main">
+    <!-- 左：曲线 -->
+    <section>
+      <div class="kicker">
+        <span class="idx">01</span>
+        <h3>粉丝增长</h3>
+        <span class="ln"></span>
+        <div class="range" id="range">
+          <button type="button" data-days="30">30 日</button>
+          <button type="button" data-days="90" aria-pressed="true">全部</button>
+        </div>
+      </div>
+
+      <div class="chart" id="chartBox">
+        <svg id="chart" viewBox="0 0 760 250" role="img" aria-label="粉丝增长折线图"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="chart-foot">
+        <span>起点 <b id="f0">175,295</b></span>
+        <span>最新 <b id="f1">209,428</b></span>
+        <span>区间增幅 <b id="f2" style="color:var(--up)">+34,133</b></span>
+        <span>最大单日 <b id="f3">+1,989</b></span>
+      </div>
+
+      <details>
+        <summary>以表格查看</summary>
+        <table id="tbl">
+          <thead><tr><th>日期</th><th>粉丝</th><th>日增</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </section>
+
+    <!-- 右：热力 + 便签 -->
+    <aside class="col-r">
+      <div class="kicker">
+        <span class="idx">02</span>
+        <h3>涨粉热力</h3>
+        <span class="ln"></span>
+      </div>
+      <div class="heat" id="heat" aria-label="近 90 天每日净涨粉"></div>
+      <div class="heat-legend">
+        <span>少</span>
+        <i style="background:rgba(183,110,121,.08)"></i>
+        <i style="background:rgba(183,110,121,.22)"></i>
+        <i style="background:rgba(183,110,121,.40)"></i>
+        <i style="background:rgba(183,110,121,.62)"></i>
+        <i style="background:rgba(183,110,121,.86)"></i>
+        <span>多</span>
+        <span style="margin-left:auto" id="heatCount">已记录 53 天</span>
+      </div>
+
+      <div class="note">
+        9 月 1 日到现在，<br />一共多了 <b>+34,133</b> 个粉丝。<br />
+        10 月 17 日那条切片之后，涨速翻了四倍。
+        <span class="sign">—— 观测记录 · 小安</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 全宽：Top 视频 -->
+  <section style="margin-top:clamp(32px,4.4vw,52px)">
+    <div class="kicker">
+      <span class="idx">03</span>
+      <h3>播放最高的视频</h3>
+      <span class="ln"></span>
+      <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted)">TOP 5 / 播放</span>
+    </div>
+    <ol class="tops" id="tops"></ol>
+  </section>
+
+  <div class="foot">
+    <span>数据来自 B站公开接口的每日快照 · 仅供参考</span>
+    <span>Last sync 2026.10.31 16:21</span>
+  </div>
+</main>
+
+<script>
+/* ---------- 数据 ---------- */
+const RAW = "175295,175879,177659,178123,178269,178597,179036,179412,180314,181933,183055,183792,184224,184490,184652,184823,185078,185277,185447,185604,185736,185870,186121,186371,186567,188089,188147,188299,188438,188524,188619,189454,191251,192876,193631,194599,195683,196747,198676,200765,201807,202292,203202,204058,204667,205590,206541,207052,207499,207926,208499,208994,209428".split(",").map(Number);
+const DATES = "09-01,09-02,09-05,09-06,09-07,09-08,09-09,09-10,09-11,09-12,09-13,09-14,09-15,09-16,09-17,09-18,09-19,09-20,09-21,09-22,09-23,09-24,09-25,09-26,09-27,10-04,10-05,10-06,10-07,10-08,10-09,10-10,10-11,10-12,10-13,10-14,10-15,10-16,10-17,10-18,10-19,10-20,10-21,10-22,10-23,10-24,10-25,10-26,10-27,10-28,10-29,10-30,10-31".split(",");
+const DATA = RAW.map((f, i) => ({ d: DATES[i], f }));
+
+const TOPS = [
+  { t: "踊り子/一小段弹唱。", p: 4724, l: 883, c: 112 },
+  { t: "唱唱🎶", p: 4208, l: 1828, c: 223 },
+  { t: "唱了re0的歌🎶", p: 3760, l: 1260, c: 162 },
+  { t: "iloveyouso", p: 3689, l: 488, c: 72 },
+  { t: "チチンプイプイ/弹唱。", p: 2624, l: 333, c: 49 },
+];
+const fmt = n => n.toLocaleString("zh-CN");
+
+/* ---------- 折线图 ---------- */
+const W = 760, H = 250, PL = 44, PR = 8, PT = 26, PB = 34;
+const svg = document.getElementById("chart");
+const tip = document.getElementById("tip");
+const box = document.getElementById("chartBox");
+const NS = "http://www.w3.org/2000/svg";
+let days = 90;
+
+function el(n, a) { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; }
+
+function smooth(p) {
+  let d = `M ${p[0].x} ${p[0].y}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[Math.max(0, i - 1)], p1 = p[i], p2 = p[i + 1], p3 = p[Math.min(p.length - 1, i + 2)];
+    d += ` C ${p1.x + (p2.x - p0.x) / 6} ${p1.y + (p2.y - p0.y) / 6} ${p2.x - (p3.x - p1.x) / 6} ${p2.y - (p3.y - p1.y) / 6} ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+let pts = [];
+function draw() {
+  const data = DATA.slice(-days);
+  const vals = data.map(d => d.f);
+  const min = Math.min(...vals), max = Math.max(...vals), span = max - min || 1;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  pts = data.map((d, i) => ({
+    x: +(PL + (i / Math.max(1, data.length - 1)) * iw).toFixed(2),
+    y: +(PT + (1 - (d.f - min) / span) * ih).toFixed(2),
+    ...d,
+    i,
+  }));
+  svg.innerHTML = "";
+
+  const defs = el("defs");
+  const g = el("linearGradient", { id: "ga", x1: 0, y1: 0, x2: 0, y2: 1 });
+  g.append(el("stop", { offset: "0%", "stop-color": "#ff8fab", "stop-opacity": ".26" }));
+  g.append(el("stop", { offset: "100%", "stop-color": "#ff8fab", "stop-opacity": "0" }));
+  defs.append(g); svg.append(defs);
+
+  // 横向刻度线 + 右侧数值
+  for (let k = 0; k <= 3; k++) {
+    const y = PT + (k / 3) * ih;
+    const v = Math.round(max - (k / 3) * span);
+    svg.append(el("line", { x1: PL, y1: y, x2: W - PR, y2: y, stroke: "rgba(43,29,36,.09)", "stroke-dasharray": k === 3 ? "0" : "2 5" }));
+    const tx = el("text", { x: PL - 8, y: y + 3.5, "text-anchor": "end", fill: "#a08a80", "font-size": "9.5", "font-family": "ui-monospace,Consolas,monospace", "letter-spacing": ".04em" });
+    tx.textContent = (v >= 10000 ? (v / 10000).toFixed(1) + "万" : v);
+    svg.append(tx);
+  }
+
+  const line = smooth(pts);
+  svg.append(el("path", { d: `${line} L ${pts[pts.length - 1].x} ${H - PB} L ${pts[0].x} ${H - PB} Z`, fill: "url(#ga)" }));
+  const path = el("path", { d: line, fill: "none", stroke: "#b76e79", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" });
+  svg.append(path);
+  const len = path.getTotalLength();
+  path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+  path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 1500, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" });
+
+  // 爆发日批注（10-17）
+  if (days >= 90) {
+    const j = pts.findIndex(p => p.d === "10-17");
+    if (j > 0) {
+      const p = pts[j];
+      svg.append(el("line", { x1: p.x, y1: p.y + 8, x2: p.x, y2: H - PB, stroke: "rgba(43,29,36,.34)", "stroke-dasharray": "3 4" }));
+      svg.append(el("circle", { cx: p.x, cy: p.y, r: 3, fill: "#fdf6ef", stroke: "#b76e79", "stroke-width": "1.5" }));
+      const lbl = el("text", { x: p.x + 8, y: p.y - 10, fill: "#b76e79", "font-size": "9.5", "font-family": "ui-monospace,Consolas,monospace", "letter-spacing": ".1em" });
+      lbl.textContent = "10/17 爆发日";
+      svg.append(lbl);
+    }
+  }
+
+  // 末端点
+  const last = pts[pts.length - 1];
+  svg.append(el("circle", { cx: last.x, cy: last.y, r: 8, fill: "rgba(255,143,171,.22)" }));
+  svg.append(el("circle", { cx: last.x, cy: last.y, r: 3.4, fill: "#b76e79", stroke: "#fdf6ef", "stroke-width": "1.6" }));
+
+  // x 轴日期
+  [0, pts.length - 1].forEach((idx, n) => {
+    const p = pts[idx];
+    const t = el("text", { x: p.x, y: H - 12, "text-anchor": n === 0 ? "start" : "end", fill: "#a08a80", "font-size": "9.5", "font-family": "ui-monospace,Consolas,monospace", "letter-spacing": ".08em" });
+    t.textContent = p.d;
+    svg.append(t);
+  });
+
+  // 悬停
+  const cross = el("line", { y1: PT - 12, y2: H - PB, stroke: "rgba(43,29,36,.3)", "stroke-dasharray": "2 3", opacity: "0" });
+  const dot = el("circle", { r: 4, fill: "#ff8fab", stroke: "#fdf6ef", "stroke-width": "2", opacity: "0" });
+  svg.append(cross, dot);
+  const hit = el("rect", { x: PL, y: 0, width: W - PL - PR, height: H, fill: "transparent" });
+  svg.append(hit);
+
+  const show = e => {
+    const r = svg.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * W;
+    let best = 0, bd = 1e9;
+    pts.forEach((p, i) => { const dd = Math.abs(p.x - x); if (dd < bd) { bd = dd; best = i; } });
+    const p = pts[best];
+    const prev = pts[best - 1];
+    cross.setAttribute("x1", p.x); cross.setAttribute("x2", p.x); cross.setAttribute("opacity", "1");
+    dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y); dot.setAttribute("opacity", "1");
+    tip.classList.add("on");
+    tip.style.left = (p.x / W) * 100 + "%";
+    tip.style.top = Math.max(0, (p.y / H) * 100 - 22) + "%";
+    tip.innerHTML = `<span style="color:#8b6f63">${p.d}</span><b>${fmt(p.f)}</b>${prev ? `<i>+${fmt(p.f - prev.f)}</i>` : ""}`;
+  };
+  const hide = () => { tip.classList.remove("on"); cross.setAttribute("opacity", "0"); dot.setAttribute("opacity", "0"); };
+  hit.addEventListener("pointermove", show);
+  hit.addEventListener("pointerleave", hide);
+
+  // 统计
+  document.getElementById("f0").textContent = fmt(pts[0].f);
+  document.getElementById("f1").textContent = fmt(last.f);
+  document.getElementById("f2").textContent = "+" + fmt(last.f - pts[0].f);
+  let mx = 0; pts.forEach((p, i) => { if (i) mx = Math.max(mx, p.f - pts[i - 1].f); });
+  document.getElementById("f3").textContent = "+" + fmt(mx);
+
+  // 表格
+  const tb = document.querySelector("#tbl tbody");
+  tb.innerHTML = pts.slice(-8).reverse().map((p, i, a) => {
+    const idx = pts.indexOf(p);
+    const dv = idx > 0 ? p.f - pts[idx - 1].f : 0;
+    return `<tr><td>${p.d}</td><td>${fmt(p.f)}</td><td style="color:#c2606f">${idx > 0 ? "+" + fmt(dv) : "—"}</td></tr>`;
+  }).join("");
+}
+
+/* ---------- 热力 ---------- */
+(function heat() {
+  const box = document.getElementById("heat");
+  const out = [];
+  for (let i = 1; i < DATA.length; i++) out.push({ d: DATA[i].d, v: DATA[i].f - DATA[i - 1].f });
+  const lv = v => v >= 900 ? 4 : v >= 400 ? 3 : v >= 180 ? 2 : v >= 60 ? 1 : 0;
+  const colors = ["rgba(183,110,121,.08)", "rgba(183,110,121,.22)", "rgba(183,110,121,.40)", "rgba(183,110,121,.62)", "rgba(183,110,121,.86)"];
+  const pad = 2;
+  const cells = [...Array(pad).fill(null), ...out];
+  const frag = document.createDocumentFragment();
+  const cols = 13 * 7;
+  for (let i = 0; i < cols; i++) {
+    const c = cells[i];
+    const s = document.createElement("i");
+    if (c) { s.style.background = colors[lv(c.v)]; s.title = `${c.d} · +${c.v}`; }
+    frag.append(s);
+  }
+  box.append(frag);
+  document.getElementById("heatCount").textContent = `已记录 ${out.length} 天`;
+})();
+
+/* ---------- TOP ---------- */
+(function tops() {
+  const max = Math.max(...TOPS.map(t => t.p));
+  document.getElementById("tops").innerHTML = TOPS.map((t, i) => `
+    <li class="top">
+      <span class="i">0${i + 1}</span>
+      <p class="t" title="${t.t}">${t.t}</p>
+      <span class="v">${fmt(t.p)} 播放</span>
+      <span class="m"><span class="bar"><i style="--w:${(t.p / max).toFixed(3)}"></i></span>${fmt(t.l)} 赞 · ${fmt(t.c)} 投币</span>
+    </li>`).join("");
+})();
+
+/* ---------- 区间切换 ---------- */
+document.getElementById("range").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  days = +b.dataset.days;
+  document.querySelectorAll("#range button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  draw();
+});
+
+/* ---------- 数字滚动 ---------- */
+document.querySelectorAll("[data-count]").forEach(el => {
+  const target = +el.dataset.count;
+  const t0 = performance.now(), dur = 1100;
+  const step = t => {
+    const p = Math.min(1, (t - t0) / dur);
+    el.textContent = fmt(Math.round(target * (1 - Math.pow(1 - p, 3))));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+});
+
+draw();
+</script>
+</body>
+</html>

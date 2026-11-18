@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>V3 · 夜间观测舱 — B站数据观测舱</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+/* ============================================================
+   DESIGN BRIEF · V3「夜间观测舱 2.0」
+   气质：冷静 · 精密 · 夜间值班室
+   字体：展示=站酷庆科黄油体 / 数值与标签=等宽 / 正文=系统无衬线
+   色板：近黑 #0d0b10（中性偏紫，不是酒红）· 面 #16131c · 发丝线 rgba(255,255,255,.07)
+        珊瑚 #ff8095（唯一强调）· 薄荷 #7fd8b0（正向）· 天青 #8fb8f0 · 琥珀 #e8c07a
+   布局：左侧固定观察栏（仪表 + 三项小指标）+ 右侧数据区，一屏内读完
+   签名：7 日目标刻度仪表 + 顶部单点光晕 + 极淡扫描线（不再铺粉色网格）
+   ============================================================ */
+:root{
+  --bg:#0d0b10;
+  --surface:#16131c;
+  --surface-2:#1b1723;
+  --ink:#ece9f1;
+  --ink-2:rgba(236,233,241,.72);
+  --muted:rgba(236,233,241,.44);
+  --line:rgba(255,255,255,.07);
+  --line-2:rgba(255,255,255,.12);
+  --coral:#ff8095;
+  --mint:#7fd8b0;
+  --sky:#8fb8f0;
+  --amber:#e8c07a;
+  --font-display:'ZCOOL QingKe HuangYou','Yuanti SC',YouYuan,'Microsoft YaHei',sans-serif;
+  --font-ui:'General Sans',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-ui);font-size:15px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(255,128,149,.32)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+section{
+  position:relative;isolation:isolate;
+  padding:clamp(44px,5.6vw,74px) clamp(18px,4vw,44px) clamp(40px,5vw,64px);
+  background:
+    radial-gradient(78% 46% at 50% -12%, rgba(255,128,149,.14), transparent 68%),
+    radial-gradient(42% 32% at 8% 0%, rgba(143,184,240,.09), transparent 70%),
+    var(--bg);
+}
+/* 顶部 1px 光带：与上方奶油区块的过渡 */
+section::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,128,149,.55) 22%,rgba(143,184,240,.4) 78%,transparent);
+}
+/* 极淡扫描线，替代原来扎眼的粉色方格 */
+section::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 62%);
+  mask-image:linear-gradient(180deg,#000,transparent 62%);
+  opacity:.6;
+}
+.inner{position:relative;z-index:1;max-width:1140px;margin-inline:auto}
+
+/* ---------- 状态带 ---------- */
+.bar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding-bottom:12px;border-bottom:1px solid var(--line);
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+}
+.bar .l{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar .r{display:flex;align-items:center;gap:16px}
+.bar b{color:var(--ink-2);font-weight:500}
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--mint)}
+.live i{width:5px;height:5px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 0 rgba(127,216,176,.6);animation:pulse 2.6s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(127,216,176,.5)}70%{box-shadow:0 0 0 7px rgba(127,216,176,0)}100%{box-shadow:0 0 0 0 rgba(127,216,176,0)}}
+
+/* ---------- 头部 ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:clamp(24px,3vw,36px) 0 clamp(24px,3vw,34px)}
+h2{
+  font-family:var(--font-display);font-weight:400;
+  font-size:clamp(2rem,3.7vw,2.9rem);line-height:1.12;letter-spacing:.02em;
+}
+h2 span{color:var(--coral)}
+.head p{font-size:12.5px;color:var(--muted);max-width:34ch;padding-bottom:4px}
+.head p b{color:var(--ink-2);font-weight:500}
+
+/* ---------- 主结构 ---------- */
+.body{display:grid;grid-template-columns:278px 1fr;gap:clamp(24px,3.6vw,48px)}
+.rail{border-right:1px solid var(--line);padding-right:clamp(20px,3vw,36px);display:flex;flex-direction:column;gap:22px}
+.rail .k{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.rail .big{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:clamp(2rem,3.2vw,2.55rem);line-height:1;letter-spacing:-.03em;margin-top:8px}
+.rail .big em{font-style:normal;font-size:.52em;color:var(--muted);margin-left:3px}
+
+.gauge{position:relative;margin-top:2px}
+.gauge svg{display:block;width:100%;height:auto;overflow:visible}
+.gauge .cap{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);text-align:center;width:100%}
+.gauge .cap b{display:block;font-family:var(--font-mono);font-size:20px;letter-spacing:-.02em;color:var(--mint)}
+.gauge .cap span{font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.gauge-legend{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--muted);margin-top:12px}
+
+.metrics{list-style:none;border-top:1px solid var(--line)}
+.metric{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.metric .n{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px}
+.metric .n i{width:5px;height:5px;border-radius:1px;flex:none}
+.metric .v{font-family:var(--font-mono);font-size:15px;letter-spacing:-.01em}
+.metric .v small{font-size:9.5px;color:var(--muted);margin-left:4px;letter-spacing:.04em}
+
+.rail-note{margin-top:2px;padding-top:16px;border-top:1px solid var(--line);font-size:11.5px;line-height:1.85;color:var(--muted)}
+.rail-note b{color:var(--ink-2);font-weight:500;font-family:var(--font-mono)}
+
+/* ---------- 右侧 ---------- */
+.area{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.6vw,18px);align-content:start}
+.card{
+  position:relative;border-radius:14px;padding:16px 18px 18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+  border:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(255,255,255,.045) inset, 0 20px 40px -32px #000;
+  transition:border-color .4s ease,background .4s ease;
+}
+.card:hover{border-color:var(--line-2);background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02))}
+.card.wide{grid-column:span 2}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-h .t{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.card-h .t i{width:6px;height:6px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px rgba(255,128,149,.7)}
+.card-h .hint{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted)}
+.range{display:flex;gap:2px;padding:2px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.range button{
+  border:0;background:none;cursor:pointer;padding:4px 10px;border-radius:6px;
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);transition:all .3s var(--ease);
+}
+.range button:hover{color:var(--ink-2)}
+.range button[aria-pressed="true"]{background:rgba(255,128,149,.16);color:var(--coral)}
+.card svg.plot{display:block;width:100%;height:auto;overflow:visible;margin-top:12px;cursor:crosshair}
+.tip{
+  position:absolute;z-index:6;pointer-events:none;transform:translate(-50%,-118%);
+  background:#211d2a;border:1px solid var(--line-2);border-radius:8px;padding:5px 9px;
+  font-family:var(--font-mono);font-size:10px;line-height:1.55;color:var(--ink-2);
+  box-shadow:0 12px 26px -12px #000;white-space:nowrap;opacity:0;transition:opacity .16s;
+}
+.tip.on{opacity:1}
+.tip b{display:block;font-size:12.5px;color:var(--ink)}
+.tip i{font-style:normal;color:var(--mint)}
+
+/* 热力 */
+.hm{display:grid;grid-template-columns:repeat(13,1fr);grid-template-rows:repeat(7,1fr);gap:3px;aspect-ratio:13/7;margin-top:14px}
+.hm i{border-radius:2px;background:rgba(255,255,255,.045);transition:transform .18s var(--ease)}
+.hm i:hover{transform:scale(1.4);box-shadow:0 0 0 1px rgba(255,255,255,.5);position:relative;z-index:2}
+.hm-lg{display:flex;align-items:center;gap:4px;margin-top:10px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:.1em;color:var(--muted)}
+.hm-lg i{width:8px;height:8px;border-radius:2px}
+
+/* TOP5 */
+.tops{list-style:none;margin-top:10px}
+.tops li{display:grid;grid-template-columns:20px minmax(0,1fr) 44px auto;gap:0 10px;align-items:center;padding:9px 4px;border-radius:6px;transition:background .3s}
+.tops li:hover{background:rgba(255,255,255,.04)}
+.tops li+li{border-top:1px solid rgba(255,255,255,.05)}
+.tops .i{font-family:var(--font-mono);font-size:9.5px;color:rgba(255,128,149,.75)}
+.tops .t{font-size:12px;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tops li:hover .t{color:var(--ink)}
+.tops .p{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-2);text-align:right}
+.tops .b{height:2px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
+.tops .b i{display:block;height:100%;background:var(--coral);opacity:.9;transform-origin:left;animation:grow 1.1s var(--ease) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.foot{
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:clamp(22px,3vw,34px);padding-top:12px;border-top:1px solid var(--line);
+  font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+}
+
+@media (max-width:920px){
+  .body{grid-template-columns:1fr}
+  .rail{border-right:0;padding-right:0;border-bottom:1px solid var(--line);padding-bottom:22px}
+  .area{grid-template-columns:1fr}
+  .card.wide{grid-column:span 1}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<section>
+<div class="inner">
+
+  <div class="bar">
+    <div class="l">
+      <span>Source Observatory</span>
+      <span>·</span>
+      <span>Snapshot <b>053</b></span>
+      <span>·</span>
+      <span><b>2026.10.31</b></span>
+    </div>
+    <div class="r">
+      <span class="live"><i></i>LIVE · 60MIN</span>
+      <span>16:21 CST</span>
+    </div>
+  </div>
+
+  <div class="head">
+    <h2>B站数据<span>观测舱</span></h2>
+    <p>17 天前那条切片还在带人进来。现在每天 <b>+434</b>，比 9 月快了将近四倍。</p>
+  </div>
+
+  <div class="body">
+
+    <!-- 左：观察栏 -->
+    <aside class="rail">
+      <div>
+        <p class="k">粉丝总数 / Followers</p>
+        <p class="big" id="bigNum">209,428</p>
+      </div>
+
+      <div class="gauge">
+        <svg id="gauge" viewBox="0 0 240 136" aria-label="近7日涨粉目标完成度"></svg>
+        <div class="gauge-legend"><span>0</span><span>5,000 / 7日</span></div>
+      </div>
+
+      <ul class="metrics">
+        <li class="metric">
+          <span class="n"><i style="background:var(--sky)"></i>总播放</span>
+          <span class="v">1,745,000<small>+2,140/日</small></span>
+        </li>
+        <li class="metric">
+          <span class="n"><i style="background:var(--mint)"></i>总获赞</span>
+          <span class="v">104,380<small>+128/日</small></span>
+        </li>
+        <li class="metric">
+          <span class="n"><i style="background:var(--amber)"></i>稿件</span>
+          <span class="v">90<small>条</small></span>
+        </li>
+      </ul>
+
+      <div class="rail-note">
+        10 月 17 日那条切片之后，日均从 <b>110</b> 跳到 <b>434</b>，之后的 14 天没有再落回去。
+      </div>
+    </aside>
+
+    <!-- 右：数据区 -->
+    <div class="area">
+
+      <div class="card wide">
+        <div class="card-h">
+          <span class="t"><i></i>粉丝增长 / Growth</span>
+          <div class="range" id="range">
+            <button type="button" data-days="30">30D</button>
+            <button type="button" data-days="90" aria-pressed="true">ALL</button>
+          </div>
+        </div>
+        <svg class="plot" id="plot" viewBox="0 0 720 240" role="img" aria-label="粉丝增长折线图"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span class="t" style="color:var(--muted)"><i style="background:var(--coral)"></i>每日净涨粉</span>
+          <span class="hint" id="hmN">53D</span>
+        </div>
+        <div class="hm" id="hm"></div>
+        <div class="hm-lg">
+          <span>少</span>
+          <i style="background:rgba(255,255,255,.05)"></i>
+          <i style="background:rgba(255,128,149,.28)"></i>
+          <i style="background:rgba(255,128,149,.5)"></i>
+          <i style="background:rgba(255,128,149,.72)"></i>
+          <i style="background:var(--coral)"></i>
+          <span>多</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span class="t" style="color:var(--muted)"><i style="background:var(--sky)"></i>播放最高的视频</span>
+          <span class="hint">TOP 5</span>
+        </div>
+        <ol class="tops" id="tops"></ol>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>数据来自 B站公开接口的每日快照 · 仅供参考</span>
+    <span>Fans 209,428 / +3,838 (7D)</span>
+  </div>
+</div>
+</section>
+
+<script>
+const RAW="175295,175879,177659,178123,178269,178597,179036,179412,180314,181933,183055,183792,184224,184490,184652,184823,185078,185277,185447,185604,185736,185870,186121,186371,186567,188089,188147,188299,188438,188524,188619,189454,191251,192876,193631,194599,195683,196747,198676,200765,201807,202292,203202,204058,204667,205590,206541,207052,207499,207926,208499,208994,209428".split(",").map(Number);
+const DATES="09-01,09-02,09-05,09-06,09-07,09-08,09-09,09-10,09-11,09-12,09-13,09-14,09-15,09-16,09-17,09-18,09-19,09-20,09-21,09-22,09-23,09-24,09-25,09-26,09-27,10-04,10-05,10-06,10-07,10-08,10-09,10-10,10-11,10-12,10-13,10-14,10-15,10-16,10-17,10-18,10-19,10-20,10-21,10-22,10-23,10-24,10-25,10-26,10-27,10-28,10-29,10-30,10-31".split(",");
+const DATA=RAW.map((f,i)=>({d:DATES[i],f}));
+const TOPS=[
+  {t:"踊り子/一小段弹唱。",p:4724},
+  {t:"唱唱🎶",p:4208},
+  {t:"唱了re0的歌🎶",p:3760},
+  {t:"iloveyouso",p:3689},
+  {t:"チチンプイプイ/弹唱。",p:2624},
+];
+const NS="http://www.w3.org/2000/svg";
+const el=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+const fmt=n=>n.toLocaleString("zh-CN");
+
+/* ---------- 仪表 ---------- */
+(function gauge(){
+  const svg=document.getElementById("gauge");
+  const cx=120,cy=112,r=92;
+  const val=3838,goal=5000,ratio=Math.min(1,val/goal);
+  const start=Math.PI,end=0;
+  const pt=(a,rr)=>[cx+Math.cos(a)*rr, cy-Math.sin(a)*rr];
+  // 刻度
+  for(let i=0;i<=20;i++){
+    const a=Math.PI-(i/20)*Math.PI;
+    const rr1=r+7, rr2=i%5===0?r+13:r+10;
+    const [x1,y1]=pt(a,rr1),[x2,y2]=pt(a,rr2);
+    svg.append(el("line",{x1,y1,x2,y2,stroke:i%5===0?"rgba(255,255,255,.38)":"rgba(255,255,255,.18)","stroke-width":"1"}));
+  }
+  const arc=`M ${pt(start,r)[0]} ${pt(start,r)[1]} A ${r} ${r} 0 0 1 ${pt(end,r)[0]} ${pt(end,r)[1]}`;
+  svg.append(el("path",{d:arc,fill:"none",stroke:"rgba(255,255,255,.07)","stroke-width":"7","stroke-linecap":"round"}));
+  const prog=el("path",{d:arc,fill:"none",stroke:"url(#gg)","stroke-width":"7","stroke-linecap":"round"});
+  const defs=el("defs");
+  const g=el("linearGradient",{id:"gg",x1:0,y1:0,x2:1,y2:0});
+  g.append(el("stop",{offset:"0%","stop-color":"#8fb8f0"}));
+  g.append(el("stop",{offset:"100%","stop-color":"#7fd8b0"}));
+  defs.append(g);svg.append(defs);svg.append(prog);
+  const len=prog.getTotalLength();
+  prog.style.strokeDasharray=len;
+  prog.style.strokeDashoffset=len;
+  prog.animate([{strokeDashoffset:len},{strokeDashoffset:len*(1-ratio)}],{duration:1600,easing:"cubic-bezier(.16,1,.3,1)",fill:"forwards"});
+  // 指针点
+  const a=Math.PI-ratio*Math.PI;
+  const [px,py]=pt(a,r);
+  svg.append(el("circle",{cx:px,cy:py,r:4.5,fill:"#0d0b10",stroke:"#7fd8b0","stroke-width":"2.5"}));
+  // 中心文字
+  const v=el("text",{x:cx,y:cy-26,"text-anchor":"middle",fill:"#ece9f1","font-size":"24","font-family":"ui-monospace,Consolas,monospace","letter-spacing":"-1"});
+  v.textContent="+3,838";svg.append(v);
+  const s=el("text",{x:cx,y:cy-8,"text-anchor":"middle",fill:"rgba(236,233,241,.44)","font-size":"8.5","font-family":"ui-monospace,Consolas,monospace","letter-spacing":"2.4"});
+  s.textContent="LAST 7 DAYS";svg.append(s);
+  const p=el("text",{x:cx,y:cy+12,"text-anchor":"middle",fill:"#7fd8b0","font-size":"9.5","font-family":"ui-monospace,Consolas,monospace","letter-spacing":"1.2"});
+  p.textContent="目标完成 "+Math.round(ratio*100)+"%";svg.append(p);
+})();
+
+/* ---------- 折线 ---------- */
+const W=720,H=236,PL=40,PR=6,PT=18,PB=36;
+const plot=document.getElementById("plot"),tip=document.getElementById("tip");
+let days=90,pts=[];
+function smooth(p){let d=`M ${p[0].x} ${p[0].y}`;
+  for(let i=0;i<p.length-1;i++){
+    const a=p[Math.max(0,i-1)],b=p[i],c=p[i+1],e=p[Math.min(p.length-1,i+2)];
+    d+=` C ${b.x+(c.x-a.x)/6} ${b.y+(c.y-a.y)/6} ${c.x-(e.x-b.x)/6} ${c.y-(e.y-b.y)/6} ${c.x} ${c.y}`;
+  } return d;}
+function draw(){
+  const data=DATA.slice(-days);
+  const vals=data.map(d=>d.f),min=Math.min(...vals),max=Math.max(...vals),span=max-min||1;
+  const iw=W-PL-PR,ih=H-PT-PB;
+  pts=data.map((d,i)=>({x:+(PL+(i/Math.max(1,data.length-1))*iw).toFixed(2),y:+(PT+(1-(d.f-min)/span)*ih).toFixed(2),...d}));
+  plot.innerHTML="";
+  const defs=el("defs");
+  const g=el("linearGradient",{id:"ga",x1:0,y1:0,x2:0,y2:1});
+  g.append(el("stop",{offset:"0%","stop-color":"#ff8095","stop-opacity":".26"}));
+  g.append(el("stop",{offset:"100%","stop-color":"#ff8095","stop-opacity":"0"}));
+  defs.append(g);plot.append(defs);
+
+  for(let k=0;k<=3;k++){
+    const y=PT+(k/3)*ih;
+    const v=Math.round(max-(k/3)*span);
+    plot.append(el("line",{x1:PL,y1:y,x2:W,y2:y,stroke:"rgba(255,255,255,.06)","stroke-dasharray":k===3?"0":"1 4"}));
+    const t=el("text",{x:PL-9,y:y+3.4,"text-anchor":"end",fill:"rgba(236,233,241,.32)","font-size":"8.5","font-family":"ui-monospace,Consolas,monospace"});
+    t.textContent=(v/10000).toFixed(1)+"万";plot.append(t);
+  }
+
+  const line=smooth(pts);
+  plot.append(el("path",{d:`${line} L ${pts[pts.length-1].x} ${H-PB} L ${pts[0].x} ${H-PB} Z`,fill:"url(#ga)"}));
+  const path=el("path",{d:line,fill:"none",stroke:"#ff8095","stroke-width":"2","stroke-linecap":"round"});
+  plot.append(path);
+  const len=path.getTotalLength();
+  path.style.strokeDasharray=len;path.style.strokeDashoffset=len;
+  path.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:1600,easing:"cubic-bezier(.16,1,.3,1)",fill:"forwards"});
+
+  const last=pts[pts.length-1];
+  plot.append(el("circle",{cx:last.x,cy:last.y,r:10,fill:"rgba(255,128,149,.16)"}));
+  plot.append(el("circle",{cx:last.x,cy:last.y,r:3.6,fill:"#ff8095",stroke:"#0d0b10","stroke-width":"2"}));
+
+  // 10/17 转折标注
+  const j=pts.findIndex(p=>p.d==="10-17");
+  if(j>0){
+    const p=pts[j];
+    plot.append(el("line",{x1:p.x,y1:p.y+9,x2:p.x,y2:H-PB,stroke:"rgba(255,255,255,.14)","stroke-dasharray":"2 3"}));
+    const t=el("text",{x:p.x+7,y:p.y-13,fill:"rgba(255,128,149,.78)","font-size":"8.5","font-family":"ui-monospace,Consolas,monospace","letter-spacing":".8"});
+    t.textContent="10/17 转折";plot.append(t);
+  }
+
+  [0,pts.length-1].forEach((idx,n)=>{
+    const p=pts[idx];
+    const t=el("text",{x:p.x,y:H-6,"text-anchor":n?"end":"start",fill:"rgba(236,233,241,.32)","font-size":"9","font-family":"ui-monospace,Consolas,monospace","letter-spacing":"1"});
+    t.textContent=p.d;plot.append(t);
+  });
+
+  const cross=el("line",{y1:PT-10,y2:H-PB,stroke:"rgba(255,255,255,.24)","stroke-dasharray":"2 3",opacity:"0"});
+  const dot=el("circle",{r:4,fill:"#ff8095",stroke:"#0d0b10","stroke-width":"2",opacity:"0"});
+  plot.append(cross,dot);
+  const hit=el("rect",{x:0,y:0,width:W,height:H,fill:"transparent"});
+  plot.append(hit);
+  hit.addEventListener("pointermove",e=>{
+    const r=plot.getBoundingClientRect();
+    const x=((e.clientX-r.left)/r.width)*W;
+    let best=0,bd=1e9;
+    pts.forEach((p,i)=>{const d=Math.abs(p.x-x);if(d<bd){bd=d;best=i}});
+    const p=pts[best],pr=pts[best-1];
+    cross.setAttribute("x1",p.x);cross.setAttribute("x2",p.x);cross.setAttribute("opacity","1");
+    dot.setAttribute("cx",p.x);dot.setAttribute("cy",p.y);dot.setAttribute("opacity","1");
+    tip.classList.add("on");
+    tip.style.left=(p.x/W)*100+"%";tip.style.top=(p.y/H)*100+"%";
+    tip.innerHTML=`<span style="opacity:.6">${p.d}</span><b>${fmt(p.f)}</b>${pr?`<i>+${fmt(p.f-pr.f)}</i>`:""}`;
+  });
+  hit.addEventListener("pointerleave",()=>{tip.classList.remove("on");cross.setAttribute("opacity","0");dot.setAttribute("opacity","0")});
+}
+
+/* ---------- 热力 ---------- */
+(function hm(){
+  const box=document.getElementById("hm");
+  const out=[];for(let i=1;i<DATA.length;i++)out.push({d:DATA[i].d,v:DATA[i].f-DATA[i-1].f});
+  const lv=v=>v>=900?4:v>=400?3:v>=180?2:v>=60?1:0;
+  const c=["rgba(255,255,255,.045)","rgba(255,128,149,.26)","rgba(255,128,149,.48)","rgba(255,128,149,.72)","#ff8095"];
+  const cells=[...Array(2).fill(null),...out];
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<91;i++){
+    const x=cells[i],s=document.createElement("i");
+    if(x){s.style.background=c[lv(x.v)];s.title=`${x.d} · +${x.v}`}
+    frag.append(s);
+  }
+  box.append(frag);
+  document.getElementById("hmN").textContent=out.length+"D";
+})();
+
+/* ---------- TOP5 ---------- */
+(function tops(){
+  const max=TOPS[0].p;
+  document.getElementById("tops").innerHTML=TOPS.map((r,i)=>`
+    <li>
+      <span class="i">0${i+1}</span>
+      <span class="t">${r.t}</span>
+      <span class="b"><i style="width:${(r.p/max*100).toFixed(1)}%"></i></span>
+      <span class="p">${fmt(r.p)}</span>
+    </li>`).join("");
+})();
+
+/* ---------- 区间 ---------- */
+document.getElementById("range").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  days=+b.dataset.days;
+  document.querySelectorAll("#range button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  draw();
+});
+
+/* ---------- 数字滚动 ---------- */
+(function(){
+  const node=document.getElementById("bigNum"),target=209428,t0=performance.now(),dur=1200;
+  const step=t=>{
+    const p=Math.min(1,(t-t0)/dur);
+    node.textContent=fmt(Math.round(target*(1-Math.pow(1-p,3))));
+    if(p<1)requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+})();
+
+draw();
+</script>
+</body>
+</html>
