@@ -588,16 +588,43 @@ export default function Observatory() {
 
   useGSAP(
     () => {
-      const items = rootRef.current?.querySelectorAll<HTMLElement>('.obs-rv');
-      if (!items?.length) return;
-      gsap.from(Array.from(items), {
-        y: 18,
-        autoAlpha: 0,
-        duration: 0.9,
-        stagger: 0.08,
-        ease: 'power2.out',
-        scrollTrigger: { trigger: rootRef.current, start: 'top 80%', once: true },
+      const root = rootRef.current;
+      if (!root) return;
+      // 尊重系统「减少动态效果」：不加动画，内容直接可见
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const bands = root.querySelectorAll<HTMLElement>('.obs-band');
+      const pill = root.querySelector<HTMLElement>('.obs-title b');
+      const chars = root.querySelectorAll<HTMLElement>('.obs-t-char');
+      const eyebrow = root.querySelector<HTMLElement>('.obs-eyebrow');
+      const figure = root.querySelector<HTMLElement>('.obs-figure');
+      const blocks = root.querySelectorAll<HTMLElement>('.obs-rv');
+
+      const tl = gsap.timeline({
+        defaults: { ease: 'power3.out' },
+        scrollTrigger: { trigger: root, start: 'top 78%', once: true },
       });
+
+      // 1. 青柠斜带从左铺开
+      tl.from(bands, { scaleX: 0, opacity: 0, duration: 1.1, stagger: 0.1, transformOrigin: 'left center' }, 0)
+        // 2. 小标题先淡入
+        .from(eyebrow, { opacity: 0, y: 10, duration: 0.6 }, 0.1)
+        // 3. 标题逐字自下翻起
+        .from(
+          chars,
+          { opacity: 0, yPercent: 46, rotateX: -85, duration: 0.85, stagger: 0.035 },
+          0.3,
+        )
+        // 4. 胶囊整块弹出（像贴纸贴上去）
+        .from(
+          pill,
+          { opacity: 0, scale: 0.82, y: 8, duration: 0.6, ease: 'back.out(2)', transformOrigin: 'left center' },
+          0.62,
+        )
+        // 5. 立绘从卡片后面升上来
+        .from(figure, { y: 76, opacity: 0, duration: 1.15 }, 0.5)
+        // 6. 其余块顺次跟进
+        .from(blocks, { y: 26, autoAlpha: 0, duration: 0.9, stagger: 0.08 }, 0.72);
     },
     { scope: rootRef },
   );
@@ -606,14 +633,19 @@ export default function Observatory() {
     <section id="observatory" ref={rootRef} className="obs-page">
       <div className="obs-wrap">
         {/* 舞台：标题 + 立绘 */}
-        <div className="obs-stage obs-rv">
+        <div className="obs-stage">
           <span className="obs-band" aria-hidden="true" />
           <span className="obs-band is-soft" aria-hidden="true" />
 
           <div className="obs-stage-copy">
             <p className="obs-eyebrow">Source Observatory · No.{no}</p>
-            <h2 className="obs-title">
-              B站数据<b>观测舱</b>
+            <h2 className="obs-title" aria-label="B站数据观测舱">
+              {'B站数据'.split('').map((c, i) => (
+                <span key={i} className="obs-t-char">
+                  {c}
+                </span>
+              ))}
+              <b>观测舱</b>
             </h2>
             <p className="obs-lede">
               {intro ? (

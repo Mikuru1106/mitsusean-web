@@ -172,7 +172,7 @@ export default function SongsGallery() {
   }, [category, sort]);
 
   return (
-    <section id="songs" className="bg-[linear-gradient(180deg,#fff8f1_0%,#ffeef5_46%,#f6fbff_100%)] pb-16 md:pb-40">
+    <section id="songs" className="bg-[linear-gradient(180deg,#f4f2fa_0%,#f8f0fa_46%,#f6fbff_100%)] pb-16 md:pb-40">
       <div className="container mx-auto px-5 md:px-10">
         {/* Header */}
         <div className="flex flex-col gap-10 px-5 py-28 text-[#241322] md:flex-row md:items-center md:justify-between">

@@ -484,7 +484,7 @@ function Hero() {
       </div>
 
       {/* 底部渐隐 */}
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#fdf6ef] to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#f4f2fa] to-transparent" />
     </div>
   );
 }
@@ -495,7 +495,7 @@ function Hero() {
 function About() {
   const dayNumber = Math.floor((Date.now() + 8 * 60 * 60 * 1000 - Date.UTC(2026, 0, 1)) / 86400000) + 1;
   return (
-    <section id="about" className="min-h-screen w-screen bg-[#fff8f1] px-4 pb-24 pt-32 md:px-8">
+    <section id="about" className="min-h-screen w-screen bg-[#f4f2fa] px-4 pb-24 pt-32 md:px-8">
       <div className="mx-auto mb-8 flex max-w-6xl flex-col items-center gap-4 text-center">
         <p className="font-general text-[10px] uppercase tracking-[0.35em] text-[#b76e79]">
           WELCOME TO Mitsusean ROOM / DAY {String(dayNumber).padStart(2, '0')}

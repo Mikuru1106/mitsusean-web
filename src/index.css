@@ -49,7 +49,7 @@ html {
   body {
     width: 100%;
     overflow-x: hidden;
-    background-color: #dfdff0;
+    background-color: #f4f2fa;
     font-family: 'General Sans', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
   }
 
@@ -652,8 +652,8 @@ html {
 
   /* ===== Footer ===== */
   .footer-shell {
-    @apply w-full py-4 md:py-5 border-t border-[#F2E6C9];
-    background: linear-gradient(to right, #FFF8E7, #FFEAF4, #EAF6FF);
+    @apply w-full py-4 md:py-5 border-t border-[#e6e1f0];
+    background: linear-gradient(to right, #f6f3fb, #faf1f8, #f1f6fd);
     color: #2B2B2B;
   }
 

@@ -34,11 +34,12 @@
     #f6f5fb 7%,
     #f4f2fa 20%,
     #f4f2fa 84%,
-    #fffaf2 100%
+    #f7f4fc 100%
   );
 }
 
-/* 一点点粉光，和站内的奶油/粉色衔接 */
+/* 一点点粉光，和站内的奶油/粉色衔接。
+   光斑中心在上边缘，不遮住就会被区块边界切出一条硬线 */
 .obs-page::before {
   content: "";
   position: absolute;
@@ -48,6 +49,8 @@
   background:
     radial-gradient(60% 44% at 12% 0%, rgba(255, 214, 228, 0.5), transparent 70%),
     radial-gradient(50% 40% at 92% 8%, rgba(206, 199, 246, 0.42), transparent 72%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 93%, transparent 100%);
 }
 
 .obs-wrap {
@@ -115,10 +118,20 @@
   line-height: 1.02;
   letter-spacing: -0.045em;
   color: var(--ink);
+  perspective: 620px;
 }
 
-/* 对应参考图的 Cyber / Night：黑字 + 天蓝胶囊白字 */
+/* 逐字翻入用的字符容器 */
+.obs-title .obs-t-char {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+/* 对应参考图的 Cyber / Night：黑字 + 天蓝胶囊白字。
+   胶囊整体入场（贴纸贴上），不做逐字翻转——白字翻到一半会消失成一块空色块 */
 .obs-title b {
+  display: inline-block;
   margin-left: 0.06em;
   padding: 0.04em 0.17em 0.1em;
   border-radius: 11px;
@@ -126,8 +139,6 @@
   color: #fff;
   font-weight: 800;
   letter-spacing: -0.04em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 
 .obs-lede {
@@ -581,19 +592,9 @@
   transform-origin: left;
 }
 
-/* ---------- 入场 ---------- */
-.obs-rv {
-  opacity: 0;
-  transform: translateY(16px);
-  animation: obs-rv 0.85s var(--ease) forwards;
-}
-
-@keyframes obs-rv {
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
+/* ---------- 入场 ----------
+   全部交给 GSAP 时间线（见 Observatory.tsx），这里不再预设隐藏态，
+   这样即使脚本没跑起来，内容也是可见的 */
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 980px) {
@@ -661,12 +662,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .obs-rv {
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
-
   .obs-pill .dot {
     animation: none;
   }
