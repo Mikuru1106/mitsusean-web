@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>抽奖机改版 · 三个方案</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+:root{
+  --bg:#f4f2fa;--card:#fdfcff;--ink:#17151f;--ink-2:#3b3548;--muted:#8f8b9e;--faint:#b6b2c4;
+  --lime:#d9f27c;--lime-ink:#2f3d0c;--sky:#7fd0ec;--rose:#b76e79;--lilac:#8b74d8;
+  --shadow:0 2px 4px rgba(38,28,58,.02),0 18px 40px -32px rgba(38,28,58,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'General Sans',system-ui,'PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto;padding:clamp(32px,5vw,64px) clamp(16px,4vw,32px) 80px}
+.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+h1{margin-top:10px;font-weight:800;font-size:clamp(1.9rem,3.6vw,2.8rem);letter-spacing:-.04em;line-height:1.1}
+h1 b{display:inline-block;margin-left:.06em;padding:.04em .17em .1em;border-radius:11px;background:var(--sky);color:#fff;font-weight:800}
+.lead{margin-top:12px;font-size:14px;line-height:1.8;color:var(--muted);max-width:60ch}
+.lead b{color:var(--ink-2);font-weight:600}
+
+.item{margin-top:clamp(28px,4vw,48px)}
+.head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--ink);color:#fff;
+  font-family:ui-monospace,Consolas,monospace;font-size:10px;letter-spacing:.14em}
+.head h2{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}
+.head .diff{font-size:12px;color:var(--muted)}
+.desc{margin:10px 0 14px;font-size:13px;line-height:1.8;color:var(--muted);max-width:70ch}
+.desc b{color:var(--ink-2);font-weight:600}
+
+.frame{
+  position:relative;border-radius:26px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);
+  height:660px;
+}
+.frame iframe{
+  position:absolute;top:0;left:0;width:1440px;height:900px;border:0;
+  transform:scale(.78);transform-origin:top left;
+}
+.frame .open{
+  position:absolute;right:14px;bottom:14px;z-index:3;
+  display:inline-flex;align-items:center;gap:6px;
+  height:36px;padding:0 16px;border-radius:999px;background:var(--ink);color:#fff;
+  font-size:12px;font-weight:600;text-decoration:none;
+  box-shadow:0 12px 24px -14px rgba(23,21,31,.8);
+}
+.frame .open:hover{background:var(--lime);color:var(--lime-ink)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid rgba(38,28,58,.1);
+  font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Video Blind Box · Redesign</p>
+  <h1>抽奖机 <b>三版</b></h1>
+  <p class="lead">
+    现在这版是深蓝灰玻璃面板 + 3D 摇杆，和站内新换的淡紫白完全不是一个语系。三个方案都把面板换成白卡、把强调色收敛到青柠一格，
+    区别在<b>机器怎么动</b>：一个是胶片横向滚动、一个是卡牌翻面、一个是整网格跑马灯。
+  </p>
+
+  <section class="item">
+    <div class="head">
+      <span class="tag">01</span>
+      <h2>胶片卷轴</h2>
+      <span class="diff">横向滚动 · 停在取景窗</span>
+    </div>
+    <p class="desc">
+      封面包在<b>一条黑色胶片</b>里，上下有齿孔，中间是青柠角标的取景窗。点击后胶片横向快滚 4 秒再急停，
+      停在哪一格就是哪条。机器本体用近黑，是整页唯一的深色块，靠它把封面衬出来。
+    </p>
+    <div class="frame" style="height:640px">
+      <iframe src="/mockups/lot-a-film.html" title="胶片卷轴" style="height:820px"></iframe>
+      <a class="open" href="/mockups/lot-a-film.html" target="_blank">打开全屏 ↗</a>
+    </div>
+  </section>
+
+  <section class="item">
+    <div class="head">
+      <span class="tag">02</span>
+      <h2>抽卡</h2>
+      <span class="diff">牌堆 · 翻面揭示</span>
+    </div>
+    <p class="desc">
+      五张牌背叠在中间，点一下<b>抽走一张、翻面</b>，翻出来的就是答案。牌背是天蓝渐变 + 斜纹，正面是封面。
+      最接近盲盒的手感，但一屏只突出<b>一张</b>封面，信息量最少。
+    </p>
+    <div class="frame" style="height:560px">
+      <iframe src="/mockups/lot-b-card.html" title="抽卡" style="height:718px"></iframe>
+      <a class="open" href="/mockups/lot-b-card.html" target="_blank">打开全屏 ↗</a>
+    </div>
+  </section>
+
+  <section class="item">
+    <div class="head">
+      <span class="tag">03</span>
+      <h2>格子跑马灯</h2>
+      <span class="diff">整池展开 · 高亮停留</span>
+    </div>
+    <p class="desc">
+      30 张封面铺成一个网格，蒙一层白纱。点一下高亮在格子里跳，越跳越慢，最后停在一格并掀开白纱。
+      唯一一版把<b>「池子里有 30 条」这件事本身</b>讲出来的方案，也和观测舱的卡片网格最统一。
+    </p>
+    <div class="frame" style="height:940px">
+      <iframe src="/mockups/lot-c-grid.html" title="格子跑马灯" style="height:1205px"></iframe>
+      <a class="open" href="/mockups/lot-c-grid.html" target="_blank">打开全屏 ↗</a>
+    </div>
+  </section>
+
+  <p class="foot">Tick one · 缩略图里可以直接点「抽」，也可以点右下角看全屏</p>
+</main>
+</body>
+</html>

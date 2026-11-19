@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>抽奖 C · 格子高亮</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+:root{
+  --bg:#f4f2fa; --card:#fdfcff; --ink:#17151f; --ink-2:#3b3548;
+  --muted:#8f8b9e; --faint:#b6b2c4;
+  --lime:#d9f27c; --lime-ink:#2f3d0c; --sky:#7fd0ec; --rose:#b76e79; --lilac:#8b74d8;
+  --shadow:0 2px 4px rgba(38,28,58,.02), 0 18px 40px -32px rgba(38,28,58,.45);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:'General Sans',system-ui,'PingFang SC','Microsoft YaHei',sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(55% 40% at 15% 0%,rgba(255,214,228,.45),transparent 70%),
+             radial-gradient(45% 36% at 88% 6%,rgba(206,199,246,.4),transparent 72%);
+}
+.wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:clamp(36px,5vw,64px) clamp(18px,4vw,32px)}
+
+.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+h2{margin-top:10px;font-weight:800;letter-spacing:-.045em;line-height:1.02;font-size:clamp(2.2rem,4vw,3.4rem)}
+h2 b{display:inline-block;margin-left:.06em;padding:.04em .17em .1em;border-radius:11px;background:var(--sky);color:#fff;font-weight:800;letter-spacing:-.04em}
+.lede{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ---------- 头排 ---------- */
+.head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.count{
+  display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:999px;
+  background:var(--card);box-shadow:var(--shadow);font-size:11.5px;font-weight:600;color:var(--ink-2);
+}
+.count i{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 3px rgba(217,242,124,.35)}
+
+/* ---------- 网格 ---------- */
+.panel{
+  margin-top:clamp(20px,3vw,30px);padding:14px;border-radius:28px;
+  background:var(--card);box-shadow:var(--shadow);
+}
+.grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:10px;
+}
+.tile{
+  position:relative;border:0;padding:0;border-radius:10px;overflow:hidden;cursor:pointer;
+  aspect-ratio:16/10;background:#e9e5f4;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease);
+}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ease)}
+.tile::after{
+  content:"";position:absolute;inset:0;background:rgba(253,252,255,.44);
+  transition:background .35s var(--ease),opacity .35s var(--ease);
+}
+.tile.is-lit::after{background:rgba(253,252,255,0)}
+.tile.is-lit{box-shadow:0 0 0 2.5px var(--lime),0 10px 22px -12px rgba(120,150,40,.8);z-index:2}
+.tile.is-win::after{background:rgba(253,252,255,0)}
+.tile.is-win{transform:scale(1.07);box-shadow:0 0 0 3px var(--lime),0 18px 32px -14px rgba(23,21,31,.55);z-index:3}
+.tile.is-dim::after{background:rgba(244,242,250,.76)}
+.tile .pv{
+  position:absolute;left:6px;bottom:6px;z-index:2;padding:2px 7px;border-radius:999px;
+  background:rgba(10,8,16,.62);color:#fff;font-size:8.5px;font-variant-numeric:tabular-nums;
+  opacity:0;transition:opacity .3s;
+}
+.tile.is-win .pv,.tile:hover .pv{opacity:1}
+.tile .pv{font-family:ui-monospace,Consolas,monospace;letter-spacing:.04em}
+
+/* ---------- 控制 ---------- */
+.controls{display:flex;align-items:center;gap:14px;margin-top:14px;padding:0 4px}
+.status{flex:1;font-size:12px;color:var(--muted)}
+.status b{color:var(--ink);font-weight:700}
+button.draw{
+  display:inline-flex;align-items:center;gap:10px;height:50px;padding:0 28px;border:0;border-radius:999px;
+  background:var(--lime);color:var(--lime-ink);font-size:13.5px;font-weight:800;cursor:pointer;
+  box-shadow:0 14px 30px -16px rgba(180,220,60,.95);
+  transition:transform .3s var(--ease),opacity .3s;
+}
+button.draw:hover{transform:translateY(-2px)}
+button.draw:disabled{opacity:.55;cursor:default;transform:none}
+button.draw span{font-size:16px}
+
+/* ---------- 结果 ---------- */
+.result{
+  display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:18px;align-items:center;
+  margin-top:14px;padding:14px;border-radius:24px;background:var(--card);box-shadow:var(--shadow);
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+}
+.result.on{opacity:1;transform:none;pointer-events:auto}
+.result img{width:150px;height:84px;object-fit:cover;border-radius:12px;display:block}
+.result .k{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.result h3{margin-top:5px;font-size:16px;font-weight:700;line-height:1.4}
+.result .plays{margin-top:5px;font-size:12px;color:var(--muted)}
+.result .plays b{color:var(--ink);font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:10px}
+.actions a,.actions button{height:40px;padding:0 18px;border-radius:999px;border:0;font-size:12.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;text-decoration:none;cursor:pointer}
+.actions .primary{background:var(--ink);color:#fff}
+.actions .ghost{background:#f1eefb;color:var(--ink-2)}
+
+.foot{margin-top:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:repeat(6,1fr)}
+}
+@media (max-width:640px){
+  .grid{grid-template-columns:repeat(4,1fr);gap:6px}
+  .panel{padding:10px;border-radius:22px}
+  .result{grid-template-columns:1fr}
+  .result img{width:100%;height:auto;aspect-ratio:16/9}
+  .actions{width:100%}
+  .actions a,.actions button{flex:1;justify-content:center}
+  button.draw{width:100%;justify-content:center}
+  .controls{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="head-row">
+    <div>
+      <p class="eyebrow">Video Blind Box · Mitsusean</p>
+      <h2>PICK A <b>MEMORY</b></h2>
+      <p class="lede">每一张封面，都是一份随机掉落的心动。格子转到哪一格，就打开哪一条。</p>
+    </div>
+    <span class="count"><i></i><span id="count">36 条在池子里</span></span>
+  </div>
+
+  <section class="panel">
+    <div class="grid" id="grid"></div>
+    <div class="controls">
+      <span class="status" id="status">准备好抽取一段记忆</span>
+      <button class="draw" id="draw">开始抽取 <span>↗</span></button>
+    </div>
+  </section>
+
+  <article class="result" id="result">
+    <img id="rImg" alt="" referrerpolicy="no-referrer" />
+    <div>
+      <p class="k">Draw result</p>
+      <h3 id="rTitle"></h3>
+      <p class="plays">▶ <b id="rPlays"></b> 播放</p>
+    </div>
+    <div class="actions">
+      <a class="primary" id="rPlay" href="#" target="_blank" rel="noreferrer">播放视频</a>
+      <button class="ghost" id="again">再抽一次</button>
+    </div>
+  </article>
+
+  <div class="foot">
+    <span>Pool / all uploads</span>
+    <span>Sequence 03 — Grid roulette</span>
+  </div>
+</main>
+
+<script src="/mockups/lottery-data.js"></script>
+<script>
+const POOL = window.LOTTERY_POOL;
+const fmt = n => n.toLocaleString('zh-CN');
+const TILES = 30;
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const drawBtn = document.getElementById('draw');
+const result = document.getElementById('result');
+const cells = [];
+let busy = false;
+let lastB = null;
+
+// 取 32 条铺格子（保证不重复）
+const pool32 = POOL.slice(0, TILES);
+document.getElementById('count').textContent = `${POOL.length} 条在池子里`;
+
+grid.innerHTML = pool32.map((v, i) => `
+  <button class="tile" data-i="${i}" title="${v.t}">
+    <img src="${v.i}" alt="" referrerpolicy="no-referrer" />
+    <span class="pv">${fmt(v.p)}</span>
+  </button>`).join('');
+document.querySelectorAll('.tile').forEach(t => cells.push(t));
+
+function clearStates(){
+  cells.forEach(t => t.classList.remove('is-lit','is-win','is-dim'));
+}
+
+function draw(){
+  if (busy) return;
+  busy = true;
+  drawBtn.disabled = true;
+  result.classList.remove('on');
+  clearStates();
+  statusEl.textContent = '正在翻格…';
+
+  const winIndex = Math.floor(Math.random() * TILES);
+  const chosen = pool32[winIndex];
+  lastB = chosen.b;
+
+  // 先跑一段：间隔逐渐变慢
+  let i = Math.floor(Math.random() * TILES);
+  let t = performance.now();
+  let gap = 55;
+  const start = performance.now();
+
+  function step(now){
+    cells.forEach(c => c.classList.remove('is-lit'));
+    i = (i + 1 + Math.floor(Math.random() * 3)) % TILES;
+    cells[i].classList.add('is-lit');
+
+    const elapsed = now - start;
+    if (elapsed > 2100) {
+      // 收尾：直接落到目标格
+      cells.forEach(c => c.classList.remove('is-lit'));
+      cells[winIndex].classList.add('is-win');
+      cells.forEach((c, idx) => { if (idx !== winIndex) c.classList.add('is-dim'); });
+      statusEl.innerHTML = `停在这一格 · <b>${chosen.t}</b>`;
+      setTimeout(() => {
+        document.getElementById('rImg').src = chosen.i;
+        document.getElementById('rTitle').textContent = chosen.t;
+        document.getElementById('rPlays').textContent = fmt(chosen.p);
+        document.getElementById('rPlay').href = `https://www.bilibili.com/video/${chosen.b}`;
+        result.classList.add('on');
+        busy = false;
+        drawBtn.disabled = false;
+      }, 520);
+      return;
+    }
+    gap = 55 + Math.pow(elapsed / 2100, 2.4) * 320;
+    setTimeout(() => requestAnimationFrame(step), gap);
+  }
+  requestAnimationFrame(step);
+}
+
+drawBtn.addEventListener('click', draw);
+document.getElementById('again').addEventListener('click', () => {
+  cells.forEach(c => c.classList.remove('is-dim','is-win'));
+  draw();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>抽奖 B · 抽卡</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+:root{
+  --bg:#f4f2fa; --card:#fdfcff; --ink:#17151f; --ink-2:#3b3548;
+  --muted:#8f8b9e; --faint:#b6b2c4;
+  --lime:#d9f27c; --lime-ink:#2f3d0c; --sky:#7fd0ec; --rose:#b76e79; --lilac:#8b74d8;
+  --shadow:0 2px 4px rgba(38,28,58,.02), 0 18px 40px -32px rgba(38,28,58,.45);
+  --shadow-lg:0 30px 60px -30px rgba(38,28,58,.45);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:'General Sans',system-ui,'PingFang SC','Microsoft YaHei',sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(55% 40% at 15% 0%,rgba(255,214,228,.45),transparent 70%),
+             radial-gradient(45% 36% at 88% 6%,rgba(206,199,246,.4),transparent 72%);
+}
+.wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:clamp(36px,5vw,64px) clamp(18px,4vw,32px)}
+
+.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+h2{margin-top:10px;font-weight:800;letter-spacing:-.045em;line-height:1.02;font-size:clamp(2.2rem,4vw,3.4rem)}
+h2 b{display:inline-block;margin-left:.06em;padding:.04em .17em .1em;border-radius:11px;background:var(--sky);color:#fff;font-weight:800;letter-spacing:-.04em}
+.lede{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ---------- 牌桌 ---------- */
+.table{
+  position:relative;margin-top:clamp(20px,3vw,32px);
+  height:400px;display:grid;place-items:center;
+}
+.deck{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+
+.card{
+  position:absolute;width:380px;height:240px;border-radius:22px;
+  transform-style:preserve-3d;
+  transition:transform .9s var(--ease), opacity .5s var(--ease);
+  box-shadow:var(--shadow-lg);
+  will-change:transform;
+}
+.card .face{
+  position:absolute;inset:0;border-radius:20px;overflow:hidden;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+}
+/* 牌背 */
+.card .back{
+  background:
+    repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 8px,transparent 8px 16px),
+    linear-gradient(150deg,#8ad4ee,#7bb8ea 46%,#a79beb);
+  display:grid;place-items:center;color:#fff;
+}
+.card .back .mark{
+  width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
+  border:2px dashed rgba(255,255,255,.6);
+  font-family:'ZCOOL QingKe HuangYou',sans-serif;font-size:26px;letter-spacing:.02em;
+}
+.card .back small{
+  position:absolute;bottom:14px;left:0;right:0;text-align:center;
+  font-family:ui-monospace,Consolas,monospace;font-size:8.5px;letter-spacing:.3em;opacity:.75;
+}
+/* 牌面 */
+.card .front{transform:rotateY(180deg);background:#241f2e}
+.card .front img{width:100%;height:100%;object-fit:cover;display:block}
+.card .front .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;
+  font-size:12px;font-weight:600;line-height:1.4;color:#fff;
+  background:linear-gradient(to top,rgba(10,8,16,.88),transparent);
+}
+.card.flipped{transform:rotateY(180deg) !important}
+.card.hidden{opacity:0}
+
+/* 背后的牌堆 */
+.stack{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.stack i{
+  position:absolute;width:380px;height:240px;border-radius:22px;
+  background:
+    repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 8px,transparent 8px 16px),
+    linear-gradient(150deg,#8ad4ee,#7bb8ea 46%,#a79beb);
+  box-shadow:var(--shadow);opacity:.72;
+  transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(var(--s,1));
+  transition:transform .7s var(--ease),opacity .5s var(--ease);
+}
+.stack.is-spent i{opacity:0}
+
+/* ---------- 按钮 ---------- */
+.cta{display:flex;justify-content:center;margin-top:-8px}
+button.draw{
+  display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 30px;border:0;border-radius:999px;
+  background:var(--ink);color:#fff;font-size:14px;font-weight:700;letter-spacing:.02em;cursor:pointer;
+  box-shadow:0 20px 40px -22px rgba(23,21,31,.8);
+  transition:transform .3s var(--ease),opacity .3s;
+}
+button.draw:hover{transform:translateY(-2px)}
+button.draw:disabled{opacity:.45;cursor:default;transform:none}
+button.draw span{color:var(--lime);font-size:16px}
+
+/* ---------- 结果 ---------- */
+.result{
+  display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:18px;align-items:center;
+  margin-top:22px;padding:18px 20px;border-radius:22px;background:var(--card);box-shadow:var(--shadow);
+  opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+}
+.result.on{opacity:1;transform:none;pointer-events:auto}
+.result img{width:150px;height:84px;object-fit:cover;border-radius:12px;display:block}
+.result p.k{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.result h3{margin-top:6px;font-size:18px;font-weight:700;line-height:1.35}
+.result .plays{margin-top:6px;font-size:12px;color:var(--muted)}
+.result .plays b{color:var(--ink);font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:10px}
+.actions a,.actions button{height:40px;padding:0 18px;border-radius:999px;border:0;font-size:12.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;text-decoration:none;cursor:pointer}
+.actions .primary{background:var(--ink);color:#fff}
+.actions .ghost{background:#f1eefb;color:var(--ink-2)}
+
+.tip{
+  margin-top:18px;text-align:center;font-family:ui-monospace,Consolas,monospace;
+  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+}
+
+@media (max-width:640px){
+  .table{height:320px}
+  .card,.stack i{width:250px;height:158px}
+  .result{grid-template-columns:1fr}
+  .result img{width:100%;height:auto;aspect-ratio:16/9}
+  .actions{width:100%}
+  .actions a,.actions button{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Video Blind Box · Mitsusean</p>
+  <h2>PICK A <b>MEMORY</b></h2>
+  <p class="lede">每一张封面，都是一份随机掉落的心动。翻一张，看看今天抽到谁。</p>
+
+  <div class="table">
+    <div class="stack" id="stack">
+      <i style="--x:-64px;--y:30px;--r:-11deg;--s:.9"></i>
+      <i style="--x:-32px;--y:16px;--r:-5.5deg;--s:.95"></i>
+      <i style="--x:32px;--y:16px;--r:5.5deg;--s:.95"></i>
+      <i style="--x:64px;--y:30px;--r:11deg;--s:.9"></i>
+    </div>
+
+    <div class="deck">
+      <div class="card" id="card">
+        <div class="face back">
+          <div class="mark">水</div>
+          <small>MITSUsean · MEMORY</small>
+        </div>
+        <div class="face front">
+          <img id="faceImg" alt="" referrerpolicy="no-referrer" />
+          <div class="cap" id="faceCap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <button class="draw" id="draw">抽一张 <span>✦</span></button>
+  </div>
+
+  <article class="result" id="result">
+    <img id="rImg" alt="" referrerpolicy="no-referrer" />
+    <div>
+      <p class="k">Draw result</p>
+      <h3 id="rTitle">—</h3>
+      <p class="plays">▶ <b id="rPlays"></b> 播放</p>
+    </div>
+    <div class="actions">
+      <a class="primary" id="rPlay" href="#" target="_blank" rel="noreferrer">播放视频</a>
+      <button class="ghost" id="again">再抽一次</button>
+    </div>
+  </article>
+
+  <p class="tip">Sequence 02 — One card, one memory</p>
+</main>
+
+<script src="/mockups/lottery-data.js"></script>
+<script>
+const POOL = window.LOTTERY_POOL;
+const fmt = n => n.toLocaleString('zh-CN');
+const card = document.getElementById('card');
+const stack = document.getElementById('stack');
+const drawBtn = document.getElementById('draw');
+const result = document.getElementById('result');
+let busy = false;
+let lastB = null;
+
+function draw(){
+  if (busy) return;
+  busy = true;
+  drawBtn.disabled = true;
+  result.classList.remove('on');
+  card.classList.remove('flipped');
+
+  const rest = POOL.filter(v => v.b !== lastB);
+  const chosen = rest[Math.floor(Math.random() * rest.length)] || POOL[0];
+  lastB = chosen.b;
+
+  // 1. 先洗牌：牌背立起、小小晃动
+  stack.classList.add('is-spent');
+  card.style.transform = 'translateY(-6px) rotate(-2deg) scale(1.02)';
+
+  // 2. 换牌面并翻过来
+  setTimeout(() => {
+    document.getElementById('faceImg').src = chosen.i;
+    document.getElementById('faceCap').textContent = chosen.t;
+    card.style.transform = 'translateY(0) rotate(0deg) scale(1.04)';
+    setTimeout(() => card.classList.add('flipped'), 240);
+  }, 420);
+
+  // 3. 出结果
+  setTimeout(() => {
+    document.getElementById('rImg').src = chosen.i;
+    document.getElementById('rTitle').textContent = chosen.t;
+    document.getElementById('rPlays').textContent = fmt(chosen.p);
+    document.getElementById('rPlay').href = `https://www.bilibili.com/video/${chosen.b}`;
+    result.classList.add('on');
+    busy = false;
+    drawBtn.disabled = false;
+    stack.classList.remove('is-spent');
+  }, 1500);
+}
+
+drawBtn.addEventListener('click', draw);
+document.getElementById('again').addEventListener('click', draw);
+</script>
+</body>
+</html>

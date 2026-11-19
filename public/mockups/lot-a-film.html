@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>抽奖 A · 胶片卷轴</title>
+<link rel="stylesheet" href="/fonts/zcool.css" />
+<style>
+:root{
+  --bg:#f4f2fa; --card:#fdfcff; --ink:#17151f; --ink-2:#3b3548;
+  --muted:#8f8b9e; --faint:#b6b2c4;
+  --lime:#d9f27c; --lime-ink:#2f3d0c; --sky:#7fd0ec; --rose:#b76e79;
+  --film:#151219;
+  --shadow:0 2px 4px rgba(38,28,58,.02), 0 18px 40px -32px rgba(38,28,58,.45);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:'General Sans',system-ui,'PingFang SC','Microsoft YaHei',sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(55% 40% at 15% 0%,rgba(255,214,228,.45),transparent 70%),
+             radial-gradient(45% 36% at 88% 6%,rgba(206,199,246,.4),transparent 72%);
+}
+.wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:clamp(36px,5vw,64px) clamp(18px,4vw,32px)}
+
+/* ---------- 头部 ---------- */
+.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+h2{
+  margin-top:10px;font-weight:800;letter-spacing:-.045em;line-height:1.02;
+  font-size:clamp(2.2rem,4vw,3.4rem);
+}
+h2 b{
+  display:inline-block;margin-left:.06em;padding:.04em .17em .1em;border-radius:11px;
+  background:var(--sky);color:#fff;font-weight:800;letter-spacing:-.04em;
+}
+.lede{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ---------- 机器 ---------- */
+.machine{
+  margin-top:clamp(24px,3.4vw,36px);
+  background:var(--film);border-radius:26px;padding:0;
+  box-shadow:0 30px 60px -40px rgba(20,14,30,.8), 0 2px 0 rgba(255,255,255,.06) inset;
+  overflow:hidden;position:relative;
+}
+.reel-box{position:relative;height:176px;overflow:hidden}
+.track{
+  position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;gap:12px;padding:0 12px;
+  will-change:transform;
+}
+.frame{
+  position:relative;flex:none;width:220px;height:124px;border-radius:6px;overflow:hidden;
+  background:#241f2e;
+}
+.frame img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.92)}
+.frame figcaption{
+  position:absolute;left:0;right:0;bottom:0;padding:22px 10px 8px;
+  font-size:10.5px;line-height:1.35;color:#fff;
+  background:linear-gradient(to top,rgba(10,8,16,.86),transparent);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.frame.is-win{box-shadow:0 0 0 2px rgba(217,242,124,.95) inset}
+.frame.is-win figcaption{opacity:1}
+/* 上下齿孔 */
+.perf{position:absolute;left:0;right:0;height:22px;z-index:3;pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 10px,rgba(255,255,255,.14) 10px 24px,transparent 24px 34px);
+}
+.perf.top{top:0;border-bottom:1px solid rgba(255,255,255,.07)}
+.perf.bottom{bottom:0;border-top:1px solid rgba(255,255,255,.07)}
+/* 取景窗 */
+.aperture{
+  position:absolute;left:50%;top:0;bottom:0;width:244px;transform:translateX(-50%);
+  z-index:2;pointer-events:none;
+  border-left:1px solid rgba(217,242,124,.55);
+  border-right:1px solid rgba(217,242,124,.55);
+  box-shadow:0 0 0 1px rgba(217,242,124,.18) inset;
+}
+.aperture::before,.aperture::after{
+  content:"";position:absolute;width:16px;height:16px;border:2px solid var(--lime);
+}
+.aperture::before{top:26px;left:-2px;border-right:0;border-bottom:0}
+.aperture::after{bottom:26px;right:-2px;border-left:0;border-top:0}
+/* 两侧压暗 */
+.side{position:absolute;top:0;bottom:0;width:calc(50% - 122px);z-index:2;pointer-events:none}
+.side.l{left:0;background:linear-gradient(90deg,rgba(21,18,25,.94),rgba(21,18,25,.34))}
+.side.r{right:0;background:linear-gradient(270deg,rgba(21,18,25,.94),rgba(21,18,25,.34))}
+
+/* 控制条 */
+.controls{
+  display:flex;align-items:center;gap:16px;padding:16px 22px 18px;
+  border-top:1px solid rgba(255,255,255,.08);background:#100d15;
+}
+.rec{display:inline-flex;align-items:center;gap:7px;font-family:ui-monospace,Consolas,monospace;
+  font-size:9.5px;letter-spacing:.2em;color:rgba(255,255,255,.5)}
+.rec i{width:7px;height:7px;border-radius:50%;background:var(--rose)}
+.rec.is-live i{background:#ff6b81;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.status{flex:1;font-size:12px;color:rgba(255,255,255,.62);letter-spacing:.02em}
+.status b{color:#fff;font-weight:600}
+.draw{
+  display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 26px;border:0;border-radius:999px;
+  background:var(--lime);color:var(--lime-ink);font-size:13.5px;font-weight:800;letter-spacing:.02em;
+  cursor:pointer;transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+  box-shadow:0 12px 26px -14px rgba(180,220,60,.9);
+}
+.draw:hover{transform:translateY(-2px)}
+.draw:disabled{opacity:.55;cursor:default;transform:none}
+.draw span{font-size:16px}
+
+/* ---------- 结果 ---------- */
+.result{
+  display:grid;grid-template-columns:180px minmax(0,1fr) auto;gap:22px;align-items:center;
+  margin-top:16px;padding:16px;border-radius:26px;background:var(--card);box-shadow:var(--shadow);
+  opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+}
+.result.on{opacity:1;transform:none;pointer-events:auto}
+.result img{width:180px;height:101px;object-fit:cover;border-radius:14px;display:block}
+.result .meta p{font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--faint)}
+.result h3{margin-top:6px;font-size:17px;font-weight:700;line-height:1.4;color:var(--ink)}
+.result .plays{margin-top:6px;font-size:12px;color:var(--muted)}
+.result .plays b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:10px}
+.actions a,.actions button{
+  height:40px;padding:0 18px;border-radius:999px;border:0;font-size:12.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;text-decoration:none;cursor:pointer;
+}
+.actions .primary{background:var(--ink);color:#fff}
+.actions .ghost{background:#f1eefb;color:var(--ink-2)}
+.empty{
+  margin-top:16px;padding:22px;border:1px dashed rgba(38,28,58,.16);border-radius:22px;
+  text-align:center;font-size:12px;color:var(--faint);
+}
+
+/* ---------- 页脚小字 ---------- */
+.foot{margin-top:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint)}
+
+@media (max-width:760px){
+  .reel-box{height:230px}
+  .frame{width:150px;height:170px}
+  .aperture{width:170px}
+  .side{width:calc(50% - 85px)}
+  .controls{flex-wrap:wrap;gap:10px}
+  .draw{width:100%;justify-content:center}
+  .result{grid-template-columns:1fr;gap:14px}
+  .result img{width:100%;height:auto;aspect-ratio:16/9}
+  .actions{width:100%}
+  .actions a,.actions button{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Video Blind Box · Mitsusean</p>
+  <h2>PICK A <b>MEMORY</b></h2>
+  <p class="lede">每一张封面，都是一份随机掉落的心动。拉一下，胶片停在哪儿就是哪条。</p>
+
+  <section class="machine">
+    <div class="reel-box" id="box">
+      <div class="track" id="track"></div>
+      <div class="perf top"></div>
+      <div class="perf bottom"></div>
+      <div class="side l"></div>
+      <div class="side r"></div>
+      <div class="aperture"></div>
+    </div>
+    <div class="controls">
+      <span class="rec" id="rec"><i></i>STANDBY</span>
+      <span class="status" id="status">准备好抽取一段记忆 · 池子里有 <b>36</b> 条</span>
+      <button class="draw" id="draw">抽一条 <span>↗</span></button>
+    </div>
+  </section>
+
+  <div class="empty" id="empty">还没有抽取 · 点右上角「抽一条」</div>
+
+  <article class="result" id="result">
+    <img id="rImg" alt="" referrerpolicy="no-referrer" />
+    <div class="meta">
+      <p>Draw result</p>
+      <h3 id="rTitle"></h3>
+      <p class="plays">▶ <b id="rPlays"></b> 播放</p>
+    </div>
+    <div class="actions">
+      <a class="primary" id="rPlay" href="#" target="_blank" rel="noreferrer">播放视频</a>
+      <button class="ghost" id="again">再抽一次</button>
+    </div>
+  </article>
+
+  <div class="foot">
+    <span>Pool / all uploads · 36 videos</span>
+    <span>Sequence 01 — Film reel</span>
+  </div>
+</main>
+
+<script src="/mockups/lottery-data.js"></script>
+<script>
+const POOL = window.LOTTERY_POOL;
+const fmt = n => n.toLocaleString('zh-CN');
+const track = document.getElementById('track');
+const box = document.getElementById('box');
+const resultEl = document.getElementById('result');
+const emptyEl = document.getElementById('empty');
+const statusEl = document.getElementById('status');
+const recEl = document.getElementById('rec');
+const drawBtn = document.getElementById('draw');
+const STEP = 232; // 220 + 12 gap
+let spinning = false;
+let lastBvid = null;
+
+function strip(list){
+  return list.map((v, i) => `
+    <figure class="frame" data-i="${i}">
+      <img src="${v.i}" alt="" referrerpolicy="no-referrer" loading="lazy" />
+      <figcaption>${v.t}</figcaption>
+    </figure>`).join('');
+}
+
+function initial(){
+  track.style.transform = 'translateX(0px)';
+  track.innerHTML = strip(POOL.slice(0, 8));
+}
+initial();
+
+function draw(){
+  if (spinning) return;
+  spinning = true;
+  resultEl.classList.remove('on');
+  emptyEl.style.display = 'none';
+  drawBtn.disabled = true;
+  recEl.classList.add('is-live');
+  recEl.lastChild.textContent = 'SCANNING';
+  statusEl.innerHTML = '正在扫描胶片…';
+
+  const rest = POOL.filter(v => v.b !== lastBvid);
+  const chosen = rest[Math.floor(Math.random() * rest.length)] || POOL[0];
+  lastBvid = chosen.b;
+
+  // 拼一条长胶片，末尾放结果
+  const dist = 34 + Math.floor(Math.random() * 8);
+  const reel = Array.from({length: dist + 1}, (_, i) => POOL[(i * 7 + Math.floor(Math.random()*36)) % POOL.length]);
+  reel[dist] = chosen;
+  // 末尾补几格，别让胶片在取景窗右边断掉
+  for (let i = 0; i < 6; i++) reel.push(POOL[(i * 5 + 3) % POOL.length]);
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(0px)';
+  track.innerHTML = strip(reel);
+  track.children[dist].classList.add('is-win');
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const w = box.clientWidth;
+      const target = w / 2 - 12 - dist * STEP - 110; // 对齐取景窗中心
+      track.style.transition = 'transform 4.2s cubic-bezier(.1,.72,.12,1)';
+      track.style.transform = `translateX(${target}px)`;
+    });
+  });
+
+  window.setTimeout(() => {
+    spinning = false;
+    drawBtn.disabled = false;
+    recEl.classList.remove('is-live');
+    recEl.lastChild.textContent = 'SELECTED';
+    statusEl.innerHTML = `胶片停住了 · <b>${chosen.t}</b>`;
+    document.getElementById('rImg').src = chosen.i;
+    document.getElementById('rTitle').textContent = chosen.t;
+    document.getElementById('rPlays').textContent = fmt(chosen.p);
+    document.getElementById('rPlay').href = `https://www.bilibili.com/video/${chosen.b}`;
+    resultEl.classList.add('on');
+  }, 4300);
+}
+
+drawBtn.addEventListener('click', draw);
+document.getElementById('again').addEventListener('click', draw);
+</script>
+</body>
+</html>
