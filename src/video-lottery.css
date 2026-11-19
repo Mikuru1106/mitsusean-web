@@ -1,21 +1,579 @@
-/* Reference project lever: same geometry, 28deg pull and synchronized ball travel. */
-.video-lottery-lever{display:grid;justify-items:center;gap:.55rem;border:0;background:transparent;padding:0;margin:1.5rem 0 1.2rem}
-.video-lottery-lever button{position:relative;height:8.6rem;width:7rem;cursor:grab;border:0;background:transparent}
-.video-lottery-lever button:active{cursor:grabbing}
-.video-lottery-lever button::after{content:'';position:absolute;bottom:.25rem;left:50%;height:2.2rem;width:5.6rem;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#fff8ee 0%,#ffe8d6 35%,#ecc9b0 75%,#c89a85 100%);box-shadow:inset 0 .4rem .7rem rgba(255,250,240,.7),inset 0 -.3rem .5rem rgba(140,95,80,.18),0 .5rem 1.2rem rgba(140,95,80,.14)}
-.video-lottery-lever-stick{position:absolute;bottom:1.4rem;left:50%;height:4.8rem;width:.78rem;transform:translateX(-50%) rotate(0deg);transform-origin:bottom center;border-radius:999px;background:linear-gradient(180deg,rgba(255,220,195,.6),#f7c8a8 18%,#fff2dc 48%,#f7c8a8 78%,rgba(220,165,140,.55));box-shadow:0 .3rem .6rem rgba(170,110,95,.18);transition:transform 520ms cubic-bezier(.4,0,.2,1);z-index:2}
-.video-lottery-lever-ball{position:absolute;top:.3rem;left:50%;height:2.8rem;width:2.8rem;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,252,244,.85) 0%,rgba(255,252,244,.4) 12%,transparent 28%),radial-gradient(circle at 70% 78%,rgba(180,130,130,.32),transparent 40%),radial-gradient(circle at 48% 48%,#ffd6c8 0%,#f4a896 50%,#d97f72 100%);box-shadow:inset 0 -.18rem .4rem rgba(160,80,75,.32),inset 0 .15rem .3rem rgba(255,240,225,.42),0 .5rem 1rem rgba(170,100,95,.28);transition:transform 520ms cubic-bezier(.4,0,.2,1);z-index:3}
-.video-lottery-lever.is-pulled .video-lottery-lever-stick{transform:translateX(-50%) rotate(28deg)}
-.video-lottery-lever.is-pulled .video-lottery-lever-ball{transform:translate(calc(-50% + 2.25rem),.56rem) rotate(28deg)}
-.video-lottery-lever p{margin:.5rem 0 0;color:#b27d6b;font:900 .58rem/1 'General Sans',system-ui;letter-spacing:.32em;text-shadow:0 1px 0 rgba(255,248,240,.7)}
-@media (max-width:760px){.video-lottery-lever button{height:7.2rem;width:5.2rem}.video-lottery-lever-stick{height:4rem}.video-lottery-lever-ball{height:2.35rem;width:2.35rem}}
-.video-lottery{--ink:#241322;--muted:#8b6f63;--pink:#b76e79;--cyan:#5f7f9f;position:relative;min-height:100vh;overflow:hidden;padding:8rem clamp(1rem,4vw,4rem) 6rem;color:var(--ink);background:radial-gradient(circle at 18% 16%,rgba(255,213,226,.55),transparent 28rem),radial-gradient(circle at 84% 58%,rgba(221,232,255,.65),transparent 24rem),linear-gradient(135deg,#fffaf2,#fff1f5 52%,#eef8ff)}
-.video-lottery::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(120,224,238,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(120,224,238,.18) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,#000,transparent 78%)}
-.video-lottery-intro,.video-lottery-card,.video-lottery-source,.video-lottery-letter{position:relative;z-index:1;max-width:1120px;margin-inline:auto}.video-lottery-intro>p{margin:0 0 1.1rem;color:var(--cyan);font:700 .65rem/1 'General Sans',system-ui;letter-spacing:.3em}.video-lottery-title{margin:0!important;text-align:left!important;color:#241322!important;font-size:clamp(3rem,7vw,6.8rem)!important;letter-spacing:-.06em}.video-lottery-intro>span{display:block;margin-top:1.2rem;color:var(--muted);font-size:.95rem}
-.video-lottery-card{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr);gap:1px;margin-top:3.5rem;overflow:hidden;border:1px solid rgba(152,184,255,.28);border-radius:2rem;background:rgba(42,59,103,.46);box-shadow:0 30px 90px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.12);backdrop-filter:blur(18px)}
-.video-lottery-screen-wrap{padding:1.2rem;background:linear-gradient(145deg,rgba(120,224,238,.1),rgba(255,143,182,.07))}.video-lottery-screen-label{display:flex;justify-content:space-between;margin-bottom:.8rem;color:var(--cyan);font:700 .62rem/1 'General Sans',system-ui;letter-spacing:.2em}.video-lottery-screen-label span:last-child{color:var(--pink)}.video-lottery-screen{position:relative;aspect-ratio:16/9;overflow:hidden;border:8px solid #080e1e;border-radius:1.2rem;background:#080e1e;box-shadow:0 0 0 1px rgba(120,224,238,.35),0 18px 40px rgba(0,0,0,.35)}.video-lottery-track{display:flex;flex-direction:column;gap:10px;padding:9px;will-change:transform}.video-lottery-cover{position:relative;flex:0 0 auto;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:.7rem;background:#202b4b}.video-lottery-cover img,.video-lottery-cover-fallback{display:block;width:100%;height:100%;object-fit:cover}.video-lottery-cover-fallback{display:grid;place-items:center;font-size:3rem;background:linear-gradient(135deg,#445a91,#ff8fb6)}.video-lottery-cover-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(4,8,20,.9))}.video-lottery-cover p{position:absolute;right:1rem;bottom:.8rem;left:1rem;display:-webkit-box;overflow:hidden;margin:0;color:#fff;font-size:.8rem;font-weight:700;line-height:1.3;-webkit-box-orient:vertical;-webkit-line-clamp:2}.video-lottery-scanline{position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 48%,rgba(120,224,238,.12) 50%,transparent 52%);background-size:100% 8px;mix-blend-mode:screen}
-.video-lottery-console{display:flex;min-height:100%;flex-direction:column;padding:1.5rem;background:rgba(255,255,255,.72)}.video-lottery-console-top{display:flex;justify-content:space-between;gap:.8rem;color:var(--muted);font:700 .62rem/1 'General Sans',system-ui;letter-spacing:.14em}.video-lottery-console-top strong{color:var(--cyan)}.video-lottery-status{display:flex;align-items:center;gap:.5rem;margin-top:1.3rem;color:#c4d1ed;font-size:.82rem}.video-lottery-status i{width:7px;height:7px;border-radius:50%;background:#5c6b8e}.video-lottery-status i.is-live{background:var(--pink);box-shadow:0 0 14px var(--pink)}.video-lottery-lever{display:flex;align-items:center;justify-content:center;gap:.75rem;margin:2rem 0 1.4rem}.video-lottery-lever button{position:relative;width:54px;height:125px;border:0;background:transparent;cursor:pointer;transform-origin:50% 100%}.video-lottery-lever button:active{transform:scale(.96)}.video-lottery-lever-head{position:absolute;top:0;left:50%;width:38px;height:38px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,#ffbfd6 22%,#d96193 100%);box-shadow:0 8px 20px rgba(255,143,182,.35)}.video-lottery-lever-rod{position:absolute;bottom:11px;left:50%;width:7px;height:86px;transform:translateX(-50%);transform-origin:bottom;border-radius:99px;background:linear-gradient(90deg,#6f7c9d,#edf3ff 50%,#52617f);box-shadow:0 5px 12px rgba(0,0,0,.35);transition:transform .45s cubic-bezier(.2,.85,.25,1.25)}.video-lottery-lever button:disabled .video-lottery-lever-rod{transform:translateX(-50%) rotate(22deg)}.video-lottery-lever small{align-self:flex-start;margin-top:1rem;color:var(--muted);font:700 .55rem/1 'General Sans',system-ui;letter-spacing:.15em;writing-mode:vertical-rl}.video-lottery-draw{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:1rem;padding:.9rem 1rem;border:1px solid rgba(120,224,238,.38);border-radius:.8rem;background:linear-gradient(100deg,rgba(120,224,238,.16),rgba(255,143,182,.14));color:#fff;font-weight:800;letter-spacing:.1em;cursor:pointer}.video-lottery-draw:hover{border-color:var(--cyan);box-shadow:0 0 24px rgba(120,224,238,.16)}.video-lottery-draw:disabled{opacity:.55;cursor:wait}.video-lottery-result{margin-top:auto;padding:1rem;border:1px solid rgba(255,143,182,.35);border-radius:.9rem;background:rgba(255,143,182,.08)}.video-lottery-result p{margin:0;color:var(--pink);font:700 .58rem/1 'General Sans',system-ui;letter-spacing:.2em}.video-lottery-result h3{display:-webkit-box;overflow:hidden;margin:.65rem 0 .45rem;color:#fff;font-size:.95rem;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}.video-lottery-result span{color:var(--muted);font-size:.75rem}.video-lottery-result button{display:block;margin-top:.8rem;padding:0;border:0;background:none;color:var(--cyan);font-size:.75rem;cursor:pointer}.video-lottery-hint{margin-top:auto;padding:1rem;border-top:1px solid rgba(147,164,199,.2);color:var(--muted);font-size:.78rem;line-height:1.7}.video-lottery-source{margin-top:1rem;color:#63769e;text-align:right;font:700 .58rem/1 'General Sans',system-ui;letter-spacing:.2em}
-.video-lottery-letter{display:flex;justify-content:space-between;gap:2rem;margin-top:5rem;padding:2rem;border:1px solid rgba(152,184,255,.25);border-radius:1.4rem;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(120,224,238,.05));box-shadow:0 20px 50px rgba(0,0,0,.2)}.video-lottery-letter p{margin:0 0 .8rem;color:var(--cyan);font:700 .62rem/1 'General Sans',system-ui;letter-spacing:.2em}.video-lottery-letter span,.video-lottery-letter small{display:block;color:var(--muted)}.video-lottery-letter h2{margin:.5rem 0 1rem;color:#fff;font-size:clamp(1.6rem,4vw,2.6rem);line-height:1}.video-lottery-letter-sign{display:flex;min-width:180px;flex-direction:column;justify-content:end;align-items:flex-end;gap:.35rem}.video-lottery-letter-sign strong{color:#fff}.video-lottery-modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:1rem;background:rgba(3,7,18,.82);backdrop-filter:blur(14px)}.video-lottery-modal-card{width:min(100%,960px);overflow:hidden;border:1px solid rgba(120,224,238,.35);border-radius:1.2rem;background:#10182e;box-shadow:0 30px 90px rgba(0,0,0,.5)}.video-lottery-modal-player{aspect-ratio:16/9}.video-lottery-modal-player iframe{width:100%;height:100%}.video-lottery-modal-info{display:flex;justify-content:space-between;gap:1rem;padding:1.2rem}.video-lottery-modal-info p{margin:0;color:var(--cyan);font:700 .58rem/1 'General Sans',system-ui;letter-spacing:.14em}.video-lottery-modal-info h3{margin:.55rem 0 0;color:#fff;font-size:1.1rem}.video-lottery-modal-actions{display:flex;flex-shrink:0;flex-direction:column;gap:.5rem}.video-lottery-modal-actions a,.video-lottery-modal-actions button{padding:.55rem .8rem;border:1px solid rgba(120,224,238,.3);border-radius:.55rem;background:transparent;color:#dff7ff;font-size:.72rem;text-decoration:none;cursor:pointer}.video-lottery-modal-actions a{background:rgba(120,224,238,.12)}
-@media (max-width:760px){.video-lottery{padding:6rem 1rem 4rem}.video-lottery-card{grid-template-columns:1fr;margin-top:2.3rem}.video-lottery-console{min-height:520px}.video-lottery-letter{flex-direction:column}.video-lottery-letter-sign{align-items:flex-start}.video-lottery-modal-info{flex-direction:column}.video-lottery-modal-actions{flex-direction:row}.video-lottery-modal-actions a,.video-lottery-modal-actions button{flex:1;text-align:center}}
-@media (prefers-reduced-motion:reduce){.video-lottery-cover,.video-lottery-lever-rod{transition:none}.video-lottery-track{transition-duration:.01ms!important}}
-.video-lottery-letter h2{color:#241322!important}.video-lottery-letter-sign strong,.video-lottery-letter-sign span{color:#241322!important}.video-lottery-draw{color:#241322!important}.video-lottery-result h3{color:#241322!important}
+/* ============================================================
+   Video Blind Box · 抽卡
+   与观测舱同一套语言：淡紫白底 + 纯白大圆角卡 + 极淡阴影
+   强调色：青柠（按钮/高亮）· 天蓝（标题胶囊/牌背）· 玫瑰（少量提示）
+   ============================================================ */
+
+.video-lottery {
+  --bg: #f4f2fa;
+  --card: #fdfcff;
+  --ink: #17151f;
+  --ink-2: #3b3548;
+  --muted: #8f8b9e;
+  --faint: #b6b2c4;
+  --line: rgba(38, 28, 58, 0.075);
+  --lime: #d9f27c;
+  --lime-ink: #2f3d0c;
+  --sky: #7fd0ec;
+  --rose: #b76e79;
+  --shadow: 0 2px 4px rgba(38, 28, 58, 0.02), 0 18px 40px -32px rgba(38, 28, 58, 0.45);
+  --shadow-lg: 0 30px 60px -30px rgba(38, 28, 58, 0.42);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  scroll-margin-top: 5.5rem;
+  padding: clamp(3.5rem, 7vw, 6rem) clamp(1.25rem, 4vw, 2rem) clamp(3rem, 6vw, 5rem);
+  color: var(--ink);
+  background: linear-gradient(180deg, #f7f4fc 0%, #f4f2fa 16%, #f4f2fa 84%, #f7f4fc 100%);
+}
+
+/* 一点点粉光，和上下邻居衔接 */
+.video-lottery::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 40% at 12% 6%, rgba(255, 214, 228, 0.42), transparent 70%),
+    radial-gradient(45% 34% at 88% 2%, rgba(206, 199, 246, 0.4), transparent 72%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+}
+
+.lot-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1140px;
+  margin-inline: auto;
+}
+
+/* ---------- 头部 ---------- */
+.lot-eyebrow {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.594rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lot-title {
+  margin-top: 0.625rem;
+  font-family: 'General Sans', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: var(--ink);
+}
+
+.lot-title b {
+  display: inline-block;
+  margin-left: 0.06em;
+  padding: 0.04em 0.17em 0.1em;
+  border-radius: 11px;
+  background: var(--sky);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.lot-lede {
+  margin-top: 0.625rem;
+  max-width: 46ch;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* ---------- 牌桌 ---------- */
+.lot-table {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 24rem;
+  margin-top: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.lot-stack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.lot-stack i {
+  position: absolute;
+  width: 23.75rem;
+  height: 15rem;
+  border-radius: 22px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0 8px, transparent 8px 16px),
+    linear-gradient(150deg, #6fc4e6, #6ea8df 46%, #8f7fdd);
+  box-shadow: var(--shadow);
+  opacity: 0.72;
+  transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s, 1));
+  transition: transform 0.7s var(--ease), opacity 0.5s var(--ease);
+}
+
+.lot-stack.is-spent i {
+  opacity: 0;
+}
+
+.lot-deck {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.lot-card {
+  position: absolute;
+  width: 23.75rem;
+  height: 15rem;
+  border-radius: 22px;
+  transform-style: preserve-3d;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.9s var(--ease), opacity 0.5s var(--ease);
+  will-change: transform;
+}
+
+.lot-card .face {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 牌背 */
+.lot-card .back {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 8px, transparent 8px 16px),
+    linear-gradient(150deg, #6fc4e6, #6ea8df 46%, #8f7fdd);
+}
+
+.lot-card .back .mark {
+  display: grid;
+  place-items: center;
+  width: 4.625rem;
+  height: 4.625rem;
+  border: 2px dashed rgba(255, 255, 255, 0.62);
+  border-radius: 50%;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.lot-card .back small {
+  position: absolute;
+  bottom: 0.875rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.53rem;
+  letter-spacing: 0.3em;
+  opacity: 0.78;
+}
+
+/* 牌面 */
+.lot-card .front {
+  transform: rotateY(180deg);
+  background: #241f2e;
+}
+
+.lot-card .front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lot-card .front .cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.625rem 0.875rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+  background: linear-gradient(to top, rgba(10, 8, 16, 0.88), transparent);
+}
+
+.lot-card.is-flipped {
+  transform: rotateY(180deg) !important;
+}
+
+/* ---------- 按钮 ---------- */
+.lot-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.lot-draw {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 3.25rem;
+  padding: 0 1.875rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 20px 40px -22px rgba(23, 21, 31, 0.8);
+  transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+.lot-draw:hover {
+  transform: translateY(-2px);
+}
+
+.lot-draw:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+.lot-draw span {
+  color: var(--lime);
+  font-size: 1rem;
+}
+
+/* ---------- 结果 ---------- */
+.lot-result {
+  display: grid;
+  grid-template-columns: 8.75rem minmax(0, 1fr) auto;
+  gap: 1.125rem;
+  align-items: center;
+  max-width: 45rem;
+  margin: 1.375rem auto 0;
+  padding: 1.125rem 1.25rem;
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+
+.lot-result.is-on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.lot-result img {
+  display: block;
+  width: 8.75rem;
+  height: 4.9375rem;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.lot-result .k {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.594rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.lot-result h3 {
+  margin-top: 0.375rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.lot-result .plays {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.lot-result .plays b {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-actions {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.lot-actions a,
+.lot-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2.5rem;
+  padding: 0 1.125rem;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lot-actions .primary {
+  background: var(--ink);
+  color: #fff;
+}
+
+.lot-actions .ghost {
+  background: #f1eefb;
+  color: var(--ink-2);
+}
+
+/* ---------- 脚注 ---------- */
+.lot-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.875rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.594rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ---------- 信 ---------- */
+.lot-letter {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: clamp(2rem, 4vw, 3.5rem);
+  padding: 1.75rem 2rem;
+  border-radius: 26px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.lot-letter .k {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.594rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.lot-letter span {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.lot-letter h2 {
+  margin: 0.375rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3.6vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.lot-letter small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.lot-letter-sign {
+  display: flex;
+  min-width: 11rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* ---------- 播放弹窗 ---------- */
+.lot-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(24, 18, 36, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.lot-modal-card {
+  width: min(100%, 60rem);
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 0 40px 90px -40px rgba(20, 14, 30, 0.8);
+}
+
+.lot-modal-player {
+  aspect-ratio: 16 / 9;
+  background: #0b0910;
+}
+
+.lot-modal-player iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lot-modal-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  align-items: center;
+}
+
+.lot-modal-info .k {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.594rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.lot-modal-info h3 {
+  margin: 0.375rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.lot-modal-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.lot-modal-actions a,
+.lot-modal-actions button {
+  display: inline-flex;
+  align-items: center;
+  height: 2.375rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lot-modal-actions a {
+  background: var(--ink);
+  color: #fff;
+}
+
+.lot-modal-actions button {
+  background: #f1eefb;
+  color: var(--ink-2);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 760px) {
+  .video-lottery {
+    padding: 4rem 1.25rem 3.5rem;
+  }
+
+  .lot-table {
+    height: 20rem;
+    margin-top: 1rem;
+  }
+
+  .lot-card,
+  .lot-stack i {
+    width: 15.625rem;
+    height: 9.875rem;
+    border-radius: 16px;
+  }
+
+  .lot-table {
+    --stack-scale: 0.9;
+  }
+
+  .lot-result {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+
+  .lot-result img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .lot-actions {
+    width: 100%;
+  }
+
+  .lot-actions a,
+  .lot-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .lot-draw {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lot-letter {
+    flex-direction: column;
+  }
+
+  .lot-letter-sign {
+    align-items: flex-start;
+  }
+
+  .lot-modal-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lot-modal-actions {
+    width: 100%;
+  }
+
+  .lot-modal-actions a,
+  .lot-modal-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lot-card,
+  .lot-stack i {
+    transition: none;
+  }
+}
